@@ -1,0 +1,6 @@
+# Normalize line endings: let Git store LF, check out native on Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
