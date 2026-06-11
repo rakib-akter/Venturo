@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:data": "tsx scripts/check-data.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
