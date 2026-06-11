@@ -21,7 +21,11 @@ import { Button } from "@/components/ui/button";
 export function ProfileClient() {
   const [profile, setProfile] = React.useState<Profile>(DEFAULT_PROFILE);
   const [saved, setSaved] = React.useState(false);
-  React.useEffect(() => setProfile(readProfile()), []);
+  React.useEffect(() => {
+    // Seed the editable copy from localStorage once on mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
+    setProfile(readProfile());
+  }, []);
 
   function update<K extends keyof Profile>(key: K, value: Profile[K]) {
     setProfile((p) => ({ ...p, [key]: value }));

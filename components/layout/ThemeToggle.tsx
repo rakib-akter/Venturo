@@ -11,6 +11,8 @@ export function ThemeToggle({ className }: { className?: string }) {
   const [dark, setDark] = React.useState(false);
 
   React.useEffect(() => {
+    // Sync from the class the no-flash script already applied to <html>.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads DOM only available after mount
     setDark(document.documentElement.classList.contains("dark"));
   }, []);
 

@@ -48,6 +48,7 @@ export function TripDraftProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sessionStorage hydration is client-only
       if (raw) setDraft({ ...DEFAULT_DRAFT, ...JSON.parse(raw) });
     } catch {
       /* ignore malformed storage */
