@@ -7,15 +7,18 @@ import type { Place } from "@/lib/types";
 import { generateTrip } from "@/lib/ai";
 import { useTrip } from "@/lib/trip-store";
 import { getNeighborhoodById } from "@/lib/mock-data";
+import { Bookmark } from "lucide-react";
 import { PillTabs } from "@/components/ui/pill-tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty-state";
 import { TripSummary } from "@/components/trip/TripSummary";
 import { NeighborhoodCard } from "@/components/trip/NeighborhoodCard";
 import { PlaceCard } from "@/components/trip/PlaceCard";
 import { ItineraryDay } from "@/components/trip/ItineraryDay";
+import { ShareTripButton } from "@/components/trip/ShareTripButton";
 
-type Tab = "overview" | "stay" | "do" | "eat" | "itinerary";
+type Tab = "overview" | "stay" | "do" | "eat" | "itinerary" | "saved";
 
 function SectionTitle({
   title,
@@ -80,12 +83,17 @@ export function ResultsClient({ tripId }: { tripId: string }) {
     [...attractions, ...food].map((p) => [p.id, p]),
   );
 
+  const savedPlaces = [...attractions, ...food].filter((p) =>
+    savedSet.has(p.id),
+  );
+
   const tabs = [
     { value: "overview", label: "Overview" },
     { value: "stay", label: "Where to stay", count: neighborhoods.length },
     { value: "do", label: "Attractions", count: attractions.length },
     { value: "eat", label: "Food", count: food.length },
     { value: "itinerary", label: "Itinerary", count: itinerary.length },
+    { value: "saved", label: "Saved", count: savedSet.size },
   ];
 
   return (
@@ -97,12 +105,16 @@ export function ResultsClient({ tripId }: { tripId: string }) {
         highlights={generated.highlights}
       />
 
-      <div className="sticky top-16 z-20 -mx-6 mt-5 bg-background/80 px-6 py-3 backdrop-blur">
+      <div className="sticky top-16 z-20 -mx-6 mt-5 flex items-center gap-3 bg-background/80 px-6 py-3 backdrop-blur">
         <PillTabs
           tabs={tabs}
           value={tab}
           onChange={(v) => setTab(v as Tab)}
+          className="flex-1"
         />
+        <div className="hidden shrink-0 sm:block">
+          <ShareTripButton title={`${destination.city} trip · Venturo`} />
+        </div>
       </div>
 
       <div className="mt-4 animate-fade-up">
@@ -266,6 +278,26 @@ export function ResultsClient({ tripId }: { tripId: string }) {
             ))}
           </div>
         )}
+
+        {tab === "saved" &&
+          (savedPlaces.length === 0 ? (
+            <EmptyState
+              icon={Bookmark}
+              title="Nothing saved yet"
+              description="Tap the bookmark on any place to keep it here for quick access."
+            />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {savedPlaces.map((p) => (
+                <PlaceCard
+                  key={p.id}
+                  place={p}
+                  tripId={tripId}
+                  saved
+                />
+              ))}
+            </div>
+          ))}
       </div>
     </div>
   );
