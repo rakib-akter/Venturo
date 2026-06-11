@@ -177,6 +177,25 @@
     scrollbar-width: none;
   }
 
+  /* Print: drop chrome and shadows so itineraries print cleanly. */
+  @media print {
+    header,
+    nav,
+    .no-print {
+      display: none !important;
+    }
+    .shadow-card,
+    .shadow-card-hover {
+      box-shadow: none !important;
+    }
+    main {
+      padding-bottom: 0 !important;
+    }
+    body {
+      background: #fff !important;
+    }
+  }
+
   @keyframes fade-up {
     from {
       opacity: 0;
