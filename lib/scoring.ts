@@ -110,8 +110,9 @@ function hotelPriorityBonus(
   };
   const avg =
     priorities.reduce((sum, p) => sum + map[p], 0) / priorities.length;
-  // Center on 70 so strong matches add, weak ones subtract, capped to ±8.
-  return clamp((avg - 70) * 0.27, -8, 8);
+  // Center on 70 so strong matches add, weak ones subtract, capped to ±12 so
+  // explicit priorities can meaningfully reorder otherwise-close neighborhoods.
+  return clamp((avg - 70) * 0.4, -12, 12);
 }
 
 // ---------------------------------------------------------------------------
