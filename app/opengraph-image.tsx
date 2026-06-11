@@ -4,6 +4,7 @@ export const alt = "Venturo — Plan smarter trips in minutes";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+// Note: avoid non-Latin glyphs here — they'd trigger a dynamic font fetch.
 export default function OgImage() {
   return new ImageResponse(
     (
@@ -20,37 +21,40 @@ export default function OgImage() {
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center" }}>
           <div
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
+              width: 48,
+              height: 48,
+              borderRadius: 14,
               background: "#FF6B5E",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 36,
+              marginRight: 18,
             }}
-          >
-            ✦
+          />
+          <div style={{ display: "flex", fontSize: 34, fontWeight: 600 }}>
+            Venturo
           </div>
-          <div style={{ fontSize: 32, fontWeight: 600 }}>Venturo</div>
         </div>
         <div
           style={{
-            fontSize: 76,
+            display: "flex",
+            fontSize: 78,
             fontWeight: 800,
             lineHeight: 1.05,
-            marginTop: 40,
+            marginTop: 44,
           }}
         >
-          Plan smarter trips
-          <br />
-          in minutes.
+          Plan smarter trips in minutes.
         </div>
-        <div style={{ fontSize: 32, marginTop: 28, color: "#cdd5e6" }}>
-          Where to stay · what to do · where to eat · day by day
+        <div
+          style={{
+            display: "flex",
+            fontSize: 32,
+            marginTop: 28,
+            color: "#cdd5e6",
+          }}
+        >
+          Where to stay, what to do, where to eat — day by day.
         </div>
       </div>
     ),
