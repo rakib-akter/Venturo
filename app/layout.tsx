@@ -6,6 +6,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { ThemeScript } from "@/components/layout/ThemeToggle";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://venturo.app"),
   title: {
     default: "Venturo — Plan smarter trips in minutes",
     template: "%s · Venturo",
