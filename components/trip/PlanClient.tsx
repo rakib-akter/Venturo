@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, CalendarRange, Users } from "lucide-react";
 import { DESTINATIONS } from "@/lib/mock-data";
 import { useTripDraft } from "@/lib/trip-draft";
+import { readProfile } from "@/lib/profile-store";
 import { nightsBetween } from "@/lib/utils";
 import { StepIndicator } from "@/components/trip/StepIndicator";
 import { DestinationPicker } from "@/components/trip/DestinationPicker";
@@ -22,12 +23,21 @@ export function PlanClient() {
   const params = useSearchParams();
   const { draft, setField, patch } = useTripDraft();
 
-  // Preselect a destination from ?destination= (landing-page links).
+  // Preselect a destination from ?destination= (landing-page links) and seed
+  // budget/pace/food from the saved profile when the draft is still untouched.
   React.useEffect(() => {
     const slug = params.get("destination");
     if (slug && !draft.destination) {
       const d = DESTINATIONS.find((x) => x.slug === slug);
       if (d) patch({ destination: d.slug, country: d.country });
+    }
+    if (!draft.destination && (draft.foodPreferences ?? []).length === 0) {
+      const profile = readProfile();
+      patch({
+        budget: profile.defaultBudget,
+        pace: profile.defaultTravelStyle,
+        foodPreferences: profile.foodPreferences,
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
