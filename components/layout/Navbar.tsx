@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/Logo";
 import { NAV_ITEMS, isActive } from "@/components/layout/nav-config";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
 
 /** Sticky top navigation, shown on tablet and up. */
@@ -34,9 +35,12 @@ export function Navbar() {
             );
           })}
         </div>
-        <Button asChild size="sm">
-          <Link href="/plan">Plan a trip</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button asChild size="sm">
+            <Link href="/plan">Plan a trip</Link>
+          </Button>
+        </div>
       </nav>
     </header>
   );

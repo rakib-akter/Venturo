@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, LogOut, UserRound } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import {
   DEFAULT_PROFILE,
   clearProfile,
@@ -60,6 +61,7 @@ export function ProfileClient() {
             Defaults we&apos;ll prefill on your next trip.
           </p>
         </div>
+        <ThemeToggle className="ml-auto" />
       </header>
 
       <div className="space-y-5">
