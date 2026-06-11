@@ -1,0 +1,173 @@
+import type {
+  GeneratedTrip,
+  Place,
+  Trip,
+  TripPreferences,
+} from "@/lib/types";
+import {
+  getAttractions,
+  getFoodPlaces,
+  getNeighborhoods,
+  isSupportedDestination,
+} from "@/lib/mock-data";
+import { getDestination } from "@/lib/data/destinations";
+import {
+  rankNeighborhoods,
+  scoreAttraction,
+  scoreRestaurant,
+} from "@/lib/scoring";
+import { buildItinerary } from "@/lib/itinerary";
+import { optionLabel } from "@/lib/constants";
+import { tripDayCount } from "@/lib/utils";
+
+/**
+ * The "AI" layer. Deterministic, rule-based trip generation that composes the
+ * scoring engine and itinerary builder, then writes human-readable copy
+ * (summary, highlights, per-place rationale). Swappable for a real model later
+ * behind this same `generateTrip` signature.
+ */
+
+function rankPlaces(
+  places: Place[],
+  prefs: TripPreferences,
+  kind: "attraction" | "food",
+): Place[] {
+  return places
+    .map((p) => {
+      const result =
+        kind === "attraction"
+          ? scoreAttraction(p, prefs)
+          : scoreRestaurant(p, prefs);
+      return {
+        ...p,
+        rating: p.rating,
+        whyItFits: explainFit(p, prefs, kind),
+        // stash the score on a non-typed field for sorting only
+        _score: result.score,
+      } as Place & { _score: number };
+    })
+    .sort((a, b) => b._score - a._score)
+    .map(({ _score, ...rest }) => rest);
+}
+
+/** One-sentence, preference-aware rationale shown on each place card. */
+function explainFit(
+  place: Place,
+  prefs: TripPreferences,
+  kind: "attraction" | "food",
+): string {
+  const matchedInterests = place.interests.filter((i) =>
+    prefs.interests.includes(i),
+  );
+  const matchedFood = (place.foodTags ?? []).filter((t) =>
+    prefs.foodPreferences.includes(t),
+  );
+
+  if (kind === "food") {
+    if (matchedFood.length > 0) {
+      return `Right up your alley for ${matchedFood
+        .map((t) => optionLabel(t).toLowerCase())
+        .join(" & ")}, and a genuine local pick — not a tourist trap.`;
+    }
+    if (place.uniqueness >= 82) {
+      return "A distinctive, locally loved spot that rewards the detour.";
+    }
+    return "A reliable, well-rated choice that fits your budget.";
+  }
+
+  if (matchedInterests.length > 0) {
+    return `Hits your interest in ${matchedInterests
+      .map((i) => optionLabel(i).toLowerCase())
+      .join(" & ")} and ranks among the city's must-sees.`;
+  }
+  return "A high-impact landmark worth working into your route.";
+}
+
+function buildSummary(
+  prefs: TripPreferences,
+  cityName: string,
+  topHoodName: string | undefined,
+): string {
+  const days = tripDayCount(prefs.startDate, prefs.endDate);
+  const interestText =
+    prefs.interests.length > 0
+      ? prefs.interests.map((i) => optionLabel(i).toLowerCase()).join(", ")
+      : "a bit of everything";
+  const pace = optionLabel(prefs.pace).toLowerCase();
+  const stay = topHoodName ? ` We'd base you in ${topHoodName}.` : "";
+  return `A ${days}-day ${pace} trip to ${cityName} built around ${interestText}, on a ${optionLabel(
+    prefs.budget,
+  ).toLowerCase()} budget for ${prefs.travelers} ${
+    prefs.travelers === 1 ? "traveler" : "travelers"
+  }.${stay}`;
+}
+
+function buildHighlights(
+  attractions: Place[],
+  food: Place[],
+  topHoodName: string | undefined,
+): string[] {
+  const highlights: string[] = [];
+  if (topHoodName) highlights.push(`Stay in ${topHoodName} for the best balance of access and vibe`);
+  if (attractions[0]) highlights.push(`Don't miss ${attractions[0].name}`);
+  if (food[0]) highlights.push(`Eat at ${food[0].name}`);
+  const hiddenGem = food.find((f) => f.touristTrapRisk <= 12);
+  if (hiddenGem) highlights.push(`Local gem: ${hiddenGem.name}`);
+  return highlights;
+}
+
+export interface GenerateTripError {
+  error: string;
+}
+
+export function generateTrip(
+  prefs: TripPreferences,
+  opts: { userId?: string } = {},
+): GeneratedTrip | GenerateTripError {
+  if (!isSupportedDestination(prefs.destination)) {
+    return {
+      error: `We don't have a curated guide for "${prefs.destination}" yet. Try Paris, Rome, or Montréal.`,
+    };
+  }
+  const destination = getDestination(prefs.destination)!;
+
+  const attractions = rankPlaces(
+    getAttractions(prefs.destination),
+    prefs,
+    "attraction",
+  );
+  const food = rankPlaces(getFoodPlaces(prefs.destination), prefs, "food");
+  const neighborhoods = rankNeighborhoods(
+    getNeighborhoods(prefs.destination),
+    prefs,
+    attractions,
+  );
+
+  const itinerary = buildItinerary(prefs, attractions, food);
+  const topHoodName = neighborhoods[0]?.name;
+
+  const trip: Trip = {
+    id: makeTripId(),
+    userId: opts.userId,
+    preferences: prefs,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    trip,
+    destination,
+    summary: buildSummary(prefs, destination.city, topHoodName),
+    highlights: buildHighlights(attractions, food, topHoodName),
+    neighborhoods,
+    attractions,
+    food,
+    itinerary,
+  };
+}
+
+function makeTripId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `trip_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
