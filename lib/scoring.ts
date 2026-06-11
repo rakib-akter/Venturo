@@ -87,7 +87,9 @@ export function scoreNeighborhood(
   let score = weightedTotal(base);
 
   // Nudge by the traveler's explicit hotel priorities (bounded ±8 total).
-  score = clamp(score + hotelPriorityBonus(hood, prefs.hotelPriorities), 0, 100);
+  score = Math.round(
+    clamp(score + hotelPriorityBonus(hood, prefs.hotelPriorities), 0, 100),
+  );
 
   return { score, factors: base };
 }
