@@ -6,6 +6,7 @@ import { ArrowRight, Map as MapIcon, BedDouble } from "lucide-react";
 import type { Place } from "@/lib/types";
 import { generateTrip } from "@/lib/ai";
 import { useTrip } from "@/lib/trip-store";
+import { useMounted } from "@/lib/use-mounted";
 import { getNeighborhoodById } from "@/lib/mock-data";
 import { Bookmark } from "lucide-react";
 import { PillTabs } from "@/components/ui/pill-tabs";
@@ -38,8 +39,7 @@ function SectionTitle({
 export function ResultsClient({ tripId }: { tripId: string }) {
   const stored = useTrip(tripId);
   const [tab, setTab] = React.useState<Tab>("overview");
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const generated = React.useMemo(() => {
     if (!stored) return null;

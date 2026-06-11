@@ -1,9 +1,9 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { Luggage, Plus } from "lucide-react";
 import { useTrips } from "@/lib/trip-store";
+import { useMounted } from "@/lib/use-mounted";
 import { TripCard } from "@/components/trip/TripCard";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -11,8 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function TripsClient() {
   const trips = useTrips();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">

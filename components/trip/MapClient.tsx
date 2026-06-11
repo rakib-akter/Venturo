@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Map as MapIcon } from "lucide-react";
 import { generateTrip } from "@/lib/ai";
 import { useTrip, useTrips } from "@/lib/trip-store";
+import { useMounted } from "@/lib/use-mounted";
 import { MapView } from "@/components/trip/MapView";
 import { TripCard } from "@/components/trip/TripCard";
 import { Button } from "@/components/ui/button";
@@ -16,8 +17,7 @@ export function MapClient() {
   const tripId = params.get("trip") ?? undefined;
   const trip = useTrip(tripId);
   const trips = useTrips();
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   const generated = React.useMemo(() => {
     if (!trip) return null;
