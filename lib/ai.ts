@@ -32,22 +32,14 @@ function rankPlaces(
   prefs: TripPreferences,
   kind: "attraction" | "food",
 ): Place[] {
+  const scoreFn = kind === "attraction" ? scoreAttraction : scoreRestaurant;
   return places
-    .map((p) => {
-      const result =
-        kind === "attraction"
-          ? scoreAttraction(p, prefs)
-          : scoreRestaurant(p, prefs);
-      return {
-        ...p,
-        rating: p.rating,
-        whyItFits: explainFit(p, prefs, kind),
-        // stash the score on a non-typed field for sorting only
-        _score: result.score,
-      } as Place & { _score: number };
-    })
-    .sort((a, b) => b._score - a._score)
-    .map(({ _score, ...rest }) => rest);
+    .map((p) => ({
+      place: { ...p, whyItFits: explainFit(p, prefs, kind) },
+      score: scoreFn(p, prefs).score,
+    }))
+    .sort((a, b) => b.score - a.score)
+    .map((s) => s.place);
 }
 
 /** One-sentence, preference-aware rationale shown on each place card. */
