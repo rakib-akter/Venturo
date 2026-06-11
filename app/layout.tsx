@@ -3,6 +3,7 @@ import "@fontsource-variable/inter";
 import "@fontsource-variable/plus-jakarta-sans";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
+import { ThemeScript } from "@/components/layout/ThemeToggle";
 
 export const metadata: Metadata = {
   title: {
@@ -40,8 +41,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <ThemeScript />
         <AppShell>{children}</AppShell>
       </body>
     </html>
