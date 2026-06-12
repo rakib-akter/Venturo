@@ -185,6 +185,10 @@ export interface GeneratedTrip {
   attractions: Place[]; // scored + sorted
   food: Place[]; // scored + sorted
   itinerary: ItineraryDay[];
+  /** Which data source produced this trip. */
+  source?: "curated" | "osm";
+  /** Required attribution line for live-data (OSM) trips. */
+  attribution?: string;
 }
 
 export interface SavedPlace {

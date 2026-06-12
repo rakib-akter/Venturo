@@ -1,5 +1,7 @@
 import type {
+  Destination,
   GeneratedTrip,
+  Neighborhood,
   Place,
   Trip,
   TripPreferences,
@@ -19,6 +21,8 @@ import {
 import { buildItinerary } from "@/lib/itinerary";
 import { optionLabel } from "@/lib/constants";
 import { tripDayCount } from "@/lib/utils";
+import { loadDestination } from "@/lib/providers";
+import type { DestinationData } from "@/lib/providers/types";
 
 /**
  * The "AI" layer. Deterministic, rule-based trip generation that composes the
@@ -112,25 +116,27 @@ export interface GenerateTripError {
   error: string;
 }
 
-export function generateTrip(
+/**
+ * Shared assembly: score + rank raw destination data, build the itinerary, and
+ * write the human-readable copy. Used by both the curated (sync) and worldwide
+ * (async) generators so they produce identical output shapes.
+ */
+function assembleTrip(
   prefs: TripPreferences,
-  opts: { userId?: string } = {},
-): GeneratedTrip | GenerateTripError {
-  if (!isSupportedDestination(prefs.destination)) {
-    return {
-      error: `We don't have a curated guide for "${prefs.destination}" yet. Try Paris, Rome, or Montréal.`,
-    };
-  }
-  const destination = getDestination(prefs.destination)!;
-
-  const attractions = rankPlaces(
-    getAttractions(prefs.destination),
-    prefs,
-    "attraction",
-  );
-  const food = rankPlaces(getFoodPlaces(prefs.destination), prefs, "food");
+  data: {
+    destination: Destination;
+    neighborhoods: Neighborhood[];
+    attractions: Place[];
+    food: Place[];
+    source?: "curated" | "osm";
+    attribution?: string;
+  },
+  opts: { userId?: string },
+): GeneratedTrip {
+  const attractions = rankPlaces(data.attractions, prefs, "attraction");
+  const food = rankPlaces(data.food, prefs, "food");
   const neighborhoods = rankNeighborhoods(
-    getNeighborhoods(prefs.destination),
+    data.neighborhoods,
     prefs,
     attractions,
   );
@@ -147,14 +153,74 @@ export function generateTrip(
 
   return {
     trip,
-    destination,
-    summary: buildSummary(prefs, destination.city, topHoodName),
+    destination: data.destination,
+    summary: buildSummary(prefs, data.destination.city, topHoodName),
     highlights: buildHighlights(attractions, food, topHoodName),
     neighborhoods,
     attractions,
     food,
     itinerary,
+    source: data.source,
+    attribution: data.attribution,
   };
+}
+
+/**
+ * Synchronous generation for curated cities (instant, offline). Returns an
+ * error for non-curated destinations — use `generateTripAsync` for those.
+ */
+export function generateTrip(
+  prefs: TripPreferences,
+  opts: { userId?: string } = {},
+): GeneratedTrip | GenerateTripError {
+  if (!isSupportedDestination(prefs.destination)) {
+    return {
+      error: `"${prefs.destination}" isn't a curated guide. Generate it from live data instead.`,
+    };
+  }
+  const destination = getDestination(prefs.destination)!;
+  return assembleTrip(
+    prefs,
+    {
+      destination,
+      neighborhoods: getNeighborhoods(prefs.destination),
+      attractions: getAttractions(prefs.destination),
+      food: getFoodPlaces(prefs.destination),
+      source: "curated",
+    },
+    opts,
+  );
+}
+
+/**
+ * Worldwide generation. Resolves the right provider (curated or live OSM),
+ * loads the data, and assembles the trip. Works for any geocoded city.
+ */
+export async function generateTripAsync(
+  prefs: TripPreferences,
+  opts: { userId?: string } = {},
+): Promise<GeneratedTrip | GenerateTripError> {
+  try {
+    const data: DestinationData = await loadDestination(
+      {
+        slug: prefs.destination,
+        displayCity: prefs.displayCity,
+        country: prefs.country,
+        center: prefs.center,
+      },
+      prefs.source,
+    );
+    if (data.attractions.length === 0 && data.food.length === 0) {
+      return {
+        error: `We couldn't find enough places in ${prefs.displayCity ?? prefs.destination} to build a trip. Try a larger nearby city.`,
+      };
+    }
+    return assembleTrip(prefs, data, opts);
+  } catch (err) {
+    return {
+      error: `Couldn't build a live guide right now: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 }
 
 function makeTripId(): string {
