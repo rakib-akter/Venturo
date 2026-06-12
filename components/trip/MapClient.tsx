@@ -51,6 +51,11 @@ export function MapClient() {
           <p className="text-muted-foreground">
             Filter layers and tap a place to locate it.
           </p>
+          {generated.attribution ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {generated.attribution}
+            </p>
+          ) : null}
         </header>
         <MapView
           neighborhoods={generated.neighborhoods}
