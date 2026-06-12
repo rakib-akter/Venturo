@@ -9,6 +9,8 @@ export interface GeocodeResult {
   slug: string;
   city: string;
   country: string;
+  /** ISO 3166-1 alpha-2 code (for flag emoji), e.g. "es". */
+  countryCode?: string;
   /** Short admin context, e.g. "Catalonia, Spain". */
   context?: string;
   center: Geo;
@@ -45,6 +47,7 @@ export interface DestinationQuery {
   slug: string;
   displayCity?: string;
   country?: string;
+  countryCode?: string;
   center?: Geo;
   bbox?: [number, number, number, number];
 }

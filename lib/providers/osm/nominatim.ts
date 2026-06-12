@@ -73,6 +73,7 @@ function normalize(r: NominatimResult): GeocodeResult | null {
     slug,
     city,
     country,
+    countryCode: r.address?.country_code,
     context: contextParts.join(", ") || undefined,
     center: { latitude: Number(r.lat), longitude: Number(r.lon) },
     bbox: toBbox(r.boundingbox),
