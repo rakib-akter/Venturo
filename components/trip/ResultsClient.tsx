@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Map as MapIcon, BedDouble } from "lucide-react";
+import { ArrowRight, Map as MapIcon, BedDouble, Globe, Loader2 } from "lucide-react";
 import type { Place } from "@/lib/types";
-import { generateTrip } from "@/lib/ai";
 import { useTrip } from "@/lib/trip-store";
 import { useMounted } from "@/lib/use-mounted";
-import { getNeighborhoodById } from "@/lib/mock-data";
+import { useGeneratedTrip } from "@/lib/use-generated-trip";
 import { Bookmark } from "lucide-react";
 import { PillTabs } from "@/components/ui/pill-tabs";
 import { Button } from "@/components/ui/button";
@@ -40,30 +39,59 @@ export function ResultsClient({ tripId }: { tripId: string }) {
   const stored = useTrip(tripId);
   const [tab, setTab] = React.useState<Tab>("overview");
   const mounted = useMounted();
+  const state = useGeneratedTrip(stored);
 
-  const generated = React.useMemo(() => {
-    if (!stored) return null;
-    const result = generateTrip(stored.preferences);
-    return "error" in result ? null : result;
-  }, [stored]);
-
-  // Loading / not-found states
-  if (!mounted || (!stored && !generated)) {
-    if (mounted && !stored) {
-      return (
-        <div className="mx-auto max-w-md px-6 py-20 text-center">
-          <h1 className="font-display text-2xl font-semibold">Trip not found</h1>
-          <p className="mt-2 text-muted-foreground">
-            This trip may have been cleared from your browser.
-          </p>
-          <Button asChild className="mt-6">
-            <Link href="/plan">Plan a new trip</Link>
-          </Button>
-        </div>
-      );
-    }
+  // Not-found (mounted, but no such trip in storage)
+  if (mounted && !stored) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4 px-6 py-8">
+      <div className="mx-auto max-w-md px-6 py-20 text-center">
+        <h1 className="font-display text-2xl font-semibold">Trip not found</h1>
+        <p className="mt-2 text-muted-foreground">
+          This trip may have been cleared from your browser.
+        </p>
+        <Button asChild className="mt-6">
+          <Link href="/plan">Plan a new trip</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // Error building a worldwide guide
+  if (mounted && state.status === "error") {
+    return (
+      <div className="mx-auto max-w-md px-6 py-20 text-center">
+        <h1 className="font-display text-2xl font-semibold">
+          Couldn&apos;t build this trip
+        </h1>
+        <p className="mt-2 text-muted-foreground">{state.error}</p>
+        <Button asChild className="mt-6">
+          <Link href="/plan">Try another city</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  // Loading (curated is instant; worldwide fetches live data)
+  if (!mounted || state.status === "loading") {
+    const city =
+      stored?.preferences.displayCity ?? stored?.preferences.destination;
+    const worldwide = stored?.preferences.source === "osm";
+    return (
+      <div className="mx-auto max-w-5xl space-y-5 px-6 py-8">
+        {worldwide && city ? (
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5 shadow-card">
+            <Loader2 className="size-5 shrink-0 animate-spin text-primary" />
+            <div>
+              <p className="font-display font-semibold">
+                Building your guide to {city}…
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Pulling sights, food, and neighbourhoods from OpenStreetMap. This
+                can take a few seconds.
+              </p>
+            </div>
+          </div>
+        ) : null}
         <Skeleton className="h-44 w-full rounded-3xl" />
         <Skeleton className="h-10 w-full max-w-md" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -75,7 +103,8 @@ export function ResultsClient({ tripId }: { tripId: string }) {
     );
   }
 
-  if (!generated || !stored) return null;
+  if (state.status !== "ready" || !stored) return null;
+  const generated = state.trip;
 
   const { destination, neighborhoods, attractions, food, itinerary } = generated;
   const savedSet = new Set(stored.savedPlaceIds);
@@ -85,6 +114,10 @@ export function ResultsClient({ tripId }: { tripId: string }) {
 
   const savedPlaces = [...attractions, ...food].filter((p) =>
     savedSet.has(p.id),
+  );
+  // Look up neighbourhoods from this trip's data (works for curated + OSM ids).
+  const neighborhoodsById = Object.fromEntries(
+    neighborhoods.map((n) => [n.id, n]),
   );
 
   const tabs = [
@@ -196,7 +229,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                   placesById={placesById}
                   neighborhood={
                     itinerary[0].neighborhoodId
-                      ? getNeighborhoodById(itinerary[0].neighborhoodId)
+                      ? neighborhoodsById[itinerary[0].neighborhoodId]
                       : undefined
                   }
                 />
@@ -271,7 +304,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                 placesById={placesById}
                 neighborhood={
                   day.neighborhoodId
-                    ? getNeighborhoodById(day.neighborhoodId)
+                    ? neighborhoodsById[day.neighborhoodId]
                     : undefined
                 }
               />
@@ -299,6 +332,13 @@ export function ResultsClient({ tripId }: { tripId: string }) {
             </div>
           ))}
       </div>
+
+      {generated.attribution ? (
+        <p className="mt-8 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Globe className="size-3.5" />
+          Live data: {generated.attribution}
+        </p>
+      ) : null}
     </div>
   );
 }
