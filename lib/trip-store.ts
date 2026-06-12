@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { TripPreferences } from "@/lib/types";
+import type { GeneratedTrip, TripPreferences } from "@/lib/types";
 
 /**
  * Client-side persistence for trips and saved places, backed by localStorage.
@@ -17,6 +17,12 @@ export interface StoredTrip {
   preferences: TripPreferences;
   createdAt: string;
   savedPlaceIds: string[];
+  /**
+   * Cached generated plan. Curated trips regenerate instantly so this stays
+   * empty, but worldwide (OSM) trips persist their snapshot here to avoid
+   * re-fetching live data on every visit.
+   */
+  snapshot?: GeneratedTrip;
 }
 
 const KEY = "venturo.trips";
@@ -67,6 +73,15 @@ export function createTrip(preferences: TripPreferences): string {
 
 export function deleteTrip(id: string): void {
   write(read().filter((t) => t.id !== id));
+}
+
+/** Persist a generated plan snapshot against a trip (for worldwide trips). */
+export function saveSnapshot(id: string, snapshot: GeneratedTrip): void {
+  const trips = read();
+  const trip = trips.find((t) => t.id === id);
+  if (!trip) return;
+  trip.snapshot = snapshot;
+  write(trips);
 }
 
 export function toggleSavedPlace(tripId: string, placeId: string): void {
