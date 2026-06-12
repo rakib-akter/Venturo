@@ -3,12 +3,10 @@ import {
   POI_RADIUS_M,
   LIMITS,
   CACHE_TTL,
-  TIMEOUT,
-  OSM,
   OVERPASS_QL_TIMEOUT,
 } from "@/lib/providers/config";
-import { postJson } from "@/lib/providers/http";
 import { cached } from "@/lib/providers/cache";
+import { runOverpassQuery } from "@/lib/providers/osm/run-query";
 import type { OsmElement } from "@/lib/providers/osm/transform";
 import { haversineKm } from "@/lib/geo";
 import { clamp } from "@/lib/utils";
@@ -18,7 +16,7 @@ interface District {
   center: Geo;
 }
 
-interface CityContext {
+export interface CityContext {
   districts: District[];
   transit: Geo[];
 }
@@ -30,8 +28,12 @@ function elementGeo(el: OsmElement): Geo | null {
   return null;
 }
 
-/** One Overpass call for named districts + public-transit nodes. */
-async function fetchContext(center: Geo): Promise<CityContext> {
+/**
+ * One Overpass call for named districts + public-transit nodes. Exported so the
+ * provider can fetch it in parallel with attractions/food. Degrades to an empty
+ * context (single "city centre" zone) when Overpass is unavailable.
+ */
+export async function fetchContext(center: Geo): Promise<CityContext> {
   const key = `overpass:context:${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
   return cached(key, CACHE_TTL.neighborhoods, async () => {
     const a = `around:${POI_RADIUS_M},${center.latitude},${center.longitude}`;
@@ -41,25 +43,9 @@ async function fetchContext(center: Geo): Promise<CityContext> {
       node["public_transport"="station"](${a});
     );out 400;`;
 
-    let elements: OsmElement[] | null = null;
-    for (const endpoint of OSM.overpassMirrors) {
-      try {
-        const res = await postJson<{ elements: OsmElement[] }>(
-          endpoint,
-          query,
-          TIMEOUT.overpass,
-          0,
-        );
-        elements = res.elements ?? [];
-        break;
-      } catch {
-        /* try next mirror */
-      }
-    }
-    // If every mirror failed, throw so we don't cache an empty result for days.
-    if (elements === null) {
-      throw new Error("Overpass context query failed on all mirrors");
-    }
+    // Start on the third mirror so this runs alongside the POI queries without
+    // hitting the same endpoint. Throws if all mirrors fail (not cached).
+    const elements = await runOverpassQuery(query, 2);
 
     const districts: District[] = [];
     const transit: Geo[] = [];
@@ -75,6 +61,22 @@ async function fetchContext(center: Geo): Promise<CityContext> {
     }
     return { districts, transit };
   });
+}
+
+/**
+ * Farthest-first clustering: pick up to `k` prominent, well-spread attractions
+ * as zone seeds, naming each zone after its anchor landmark.
+ */
+function clusterZones(attractions: Place[], k: number): District[] {
+  if (attractions.length === 0) return [];
+  // attractions are already ranked; the first is the strongest anchor.
+  const seeds: Place[] = [attractions[0]];
+  for (const cand of attractions.slice(1)) {
+    if (seeds.length >= k) break;
+    const minDist = Math.min(...seeds.map((s) => haversineKm(s.geo, cand.geo)));
+    if (minDist >= 0.6) seeds.push(cand); // keep zones meaningfully apart
+  }
+  return seeds.map((s) => ({ name: `Around ${s.name}`, center: s.geo }));
 }
 
 /** Count items within `radiusKm` of a point. */
@@ -126,25 +128,20 @@ function buildProsCons(
  * POI density + transit. Falls back to a single "City centre" zone when OSM has
  * no named districts in range.
  */
-export async function synthesizeNeighborhoods(
+export function synthesizeNeighborhoods(
   center: Geo,
   city: string,
   destination: string,
   attractions: Place[],
   food: Place[],
-): Promise<Neighborhood[]> {
-  // Districts/transit are secondary: if Overpass is down, degrade to a single
-  // "city centre" zone rather than failing the whole trip.
-  let ctx: CityContext;
-  try {
-    ctx = await fetchContext(center);
-  } catch {
-    ctx = { districts: [], transit: [] };
-  }
-
+  ctx: CityContext,
+): Neighborhood[] {
   let districts = ctx.districts;
-  if (districts.length === 0) {
-    districts = [{ name: `${city} centre`, center }];
+  // No named districts from OSM? Derive zones by clustering around the most
+  // prominent attractions so users still get comparable areas.
+  if (districts.length < 2) {
+    const clustered = clusterZones(attractions, 6);
+    districts = clustered.length >= 2 ? clustered : [{ name: `${city} centre`, center }];
   }
   // Keep the districts richest in POIs.
   districts = districts
