@@ -21,8 +21,6 @@ import {
 import { buildItinerary } from "@/lib/itinerary";
 import { optionLabel } from "@/lib/constants";
 import { tripDayCount } from "@/lib/utils";
-import { loadDestination } from "@/lib/providers";
-import type { DestinationData } from "@/lib/providers/types";
 
 /**
  * The "AI" layer. Deterministic, rule-based trip generation that composes the
@@ -121,16 +119,18 @@ export interface GenerateTripError {
  * write the human-readable copy. Used by both the curated (sync) and worldwide
  * (async) generators so they produce identical output shapes.
  */
-function assembleTrip(
+export interface AssembleInput {
+  destination: Destination;
+  neighborhoods: Neighborhood[];
+  attractions: Place[];
+  food: Place[];
+  source?: "curated" | "osm";
+  attribution?: string;
+}
+
+export function assembleTrip(
   prefs: TripPreferences,
-  data: {
-    destination: Destination;
-    neighborhoods: Neighborhood[];
-    attractions: Place[];
-    food: Place[];
-    source?: "curated" | "osm";
-    attribution?: string;
-  },
+  data: AssembleInput,
   opts: { userId?: string },
 ): GeneratedTrip {
   const attractions = rankPlaces(data.attractions, prefs, "attraction");
@@ -192,38 +192,7 @@ export function generateTrip(
   );
 }
 
-/**
- * Worldwide generation. Resolves the right provider (curated or live OSM),
- * loads the data, and assembles the trip. Works for any geocoded city.
- */
-export async function generateTripAsync(
-  prefs: TripPreferences,
-  opts: { userId?: string } = {},
-): Promise<GeneratedTrip | GenerateTripError> {
-  try {
-    const data: DestinationData = await loadDestination(
-      {
-        slug: prefs.destination,
-        displayCity: prefs.displayCity,
-        country: prefs.country,
-        center: prefs.center,
-      },
-      prefs.source,
-    );
-    if (data.attractions.length === 0 && data.food.length === 0) {
-      return {
-        error: `We couldn't find enough places in ${prefs.displayCity ?? prefs.destination} to build a trip. Try a larger nearby city.`,
-      };
-    }
-    return assembleTrip(prefs, data, opts);
-  } catch (err) {
-    return {
-      error: `Couldn't build a live guide right now: ${err instanceof Error ? err.message : String(err)}`,
-    };
-  }
-}
-
-function makeTripId(): string {
+export function makeTripId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
