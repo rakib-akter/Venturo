@@ -1,43 +1,32 @@
 import type { Geo, Place } from "@/lib/types";
 import {
-  OSM,
   POI_RADIUS_M,
   LIMITS,
   CACHE_TTL,
-  TIMEOUT,
   OVERPASS_QL_TIMEOUT,
 } from "@/lib/providers/config";
-import { postJson } from "@/lib/providers/http";
 import { cached } from "@/lib/providers/cache";
+import { runOverpassQuery } from "@/lib/providers/osm/run-query";
 import {
   transformAttraction,
   transformFood,
-  type OsmElement,
 } from "@/lib/providers/osm/transform";
-
-interface OverpassResponse {
-  elements: OsmElement[];
-  /** Present when Overpass hit a server-side timeout or runtime error. */
-  remark?: string;
-}
 
 function around(center: Geo): string {
   return `around:${POI_RADIUS_M},${center.latitude},${center.longitude}`;
 }
 
-// Attractions can be polygons (parks, museums), so we include ways — but we
-// deliberately skip relations, which force slow geometry recursion in Overpass
-// and were causing server-side timeouts in dense city centres.
+// Node-only for speed and reliability: querying ways/relations forces slow
+// geometry resolution that times out on public Overpass instances. We lose a
+// few polygon-only parks/museums but gain consistent sub-10s responses.
 function attractionQuery(center: Geo): string {
   const a = around(center);
   return `[out:json][timeout:${OVERPASS_QL_TIMEOUT}];(
     node["tourism"~"^(attraction|museum|gallery|artwork|viewpoint|theme_park|zoo|aquarium)$"]["name"](${a});
-    way["tourism"~"^(attraction|museum|gallery|theme_park|zoo|aquarium)$"]["name"](${a});
     node["historic"~"^(monument|memorial|castle|fort|ruins|archaeological_site|city_gate)$"]["name"](${a});
-    way["historic"~"^(castle|fort|ruins|archaeological_site)$"]["name"](${a});
-    way["leisure"~"^(park|garden)$"]["name"](${a});
+    node["leisure"~"^(park|garden)$"]["name"](${a});
     node["amenity"="place_of_worship"]["name"]["wikidata"](${a});
-  );out center 400;`;
+  );out 400;`;
 }
 
 // Food venues are overwhelmingly nodes; querying only nodes keeps Overpass fast
@@ -48,30 +37,6 @@ function foodQuery(center: Geo): string {
     node["amenity"~"^(restaurant|cafe|bar|pub|biergarten|ice_cream|fast_food)$"]["name"](${a});
     node["shop"="bakery"]["name"](${a});
   );out 400;`;
-}
-
-async function runOverpass(query: string): Promise<OsmElement[]> {
-  let lastErr: unknown;
-  // The mirror loop is our redundancy, so each POST itself does not retry.
-  for (const endpoint of OSM.overpassMirrors) {
-    try {
-      const res = await postJson<OverpassResponse>(
-        endpoint,
-        query,
-        TIMEOUT.overpass,
-        0,
-      );
-      // A server-side timeout returns HTTP 200 with empty elements + a remark.
-      // Treat that as a failure so we try another mirror and don't cache it.
-      if ((!res.elements || res.elements.length === 0) && res.remark) {
-        throw new Error(`Overpass remark: ${res.remark}`);
-      }
-      return res.elements ?? [];
-    } catch (err) {
-      lastErr = err; // busy/rate-limited/slow mirror — try the next one
-    }
-  }
-  throw lastErr ?? new Error("All Overpass mirrors failed");
 }
 
 /** Drop duplicate POIs (node+way for the same place) by lowercased name. */
@@ -119,7 +84,7 @@ export async function fetchAttractions(
 ): Promise<Place[]> {
   const key = `overpass:attractions:${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
   const places = await cached(key, CACHE_TTL.pois, async () => {
-    const els = await runOverpass(attractionQuery(center));
+    const els = await runOverpassQuery(attractionQuery(center), 0);
     return els
       .map((el) => transformAttraction(el, destination, city))
       .filter((p): p is Place => p !== null);
@@ -135,7 +100,7 @@ export async function fetchFood(
 ): Promise<Place[]> {
   const key = `overpass:food:${center.latitude.toFixed(3)},${center.longitude.toFixed(3)}`;
   const places = await cached(key, CACHE_TTL.pois, async () => {
-    const els = await runOverpass(foodQuery(center));
+    const els = await runOverpassQuery(foodQuery(center), 1);
     return els
       .map((el) => transformFood(el, destination, city))
       .filter((p): p is Place => p !== null);
