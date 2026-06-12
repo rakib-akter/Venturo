@@ -98,6 +98,7 @@ export async function postJson<T>(
   url: string,
   body: string,
   timeoutMs: number,
+  retries = 0,
 ): Promise<T> {
   const res = await requestWithRetry(
     url,
@@ -111,6 +112,7 @@ export async function postJson<T>(
       body,
     },
     timeoutMs,
+    retries,
   );
   if (!res.ok) {
     throw new ProviderHttpError(`POST ${url} → ${res.status}`, res.status);
