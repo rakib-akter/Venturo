@@ -4,9 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Map as MapIcon } from "lucide-react";
-import { generateTrip } from "@/lib/ai";
 import { useTrip, useTrips } from "@/lib/trip-store";
 import { useMounted } from "@/lib/use-mounted";
+import { useGeneratedTrip } from "@/lib/use-generated-trip";
 import { MapView } from "@/components/trip/MapView";
 import { TripCard } from "@/components/trip/TripCard";
 import { Button } from "@/components/ui/button";
@@ -18,22 +18,21 @@ export function MapClient() {
   const trip = useTrip(tripId);
   const trips = useTrips();
   const mounted = useMounted();
-
-  const generated = React.useMemo(() => {
-    if (!trip) return null;
-    const r = generateTrip(trip.preferences);
-    return "error" in r ? null : r;
-  }, [trip]);
+  const state = useGeneratedTrip(trip);
 
   // A specific trip is selected → show its map.
   if (tripId) {
-    if (!mounted) return <MapSkeleton />;
-    if (!generated || !trip) {
+    if (!mounted || state.status === "loading") return <MapSkeleton />;
+    if (state.status === "error" || !trip) {
       return (
         <EmptyState
           icon={MapIcon}
-          title="Trip not found"
-          description="We couldn't find that trip in this browser."
+          title="Map unavailable"
+          description={
+            state.status === "error"
+              ? state.error
+              : "We couldn't find that trip in this browser."
+          }
           action={
             <Button asChild>
               <Link href="/plan">Plan a trip</Link>
@@ -42,6 +41,7 @@ export function MapClient() {
         />
       );
     }
+    const generated = state.trip;
     return (
       <div className="mx-auto max-w-6xl px-6 py-6">
         <header className="mb-5">
