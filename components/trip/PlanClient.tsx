@@ -78,6 +78,7 @@ export function PlanClient() {
               patch({
                 destination: r.slug,
                 country: r.country,
+                countryCode: r.countryCode,
                 center: r.center,
                 source: r.source,
                 displayCity: r.city,

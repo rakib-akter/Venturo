@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Check, Globe, Loader2, MapPin, Search, Star } from "lucide-react";
+import { Check, Globe, Loader2, Search, Star } from "lucide-react";
 import type { GeocodeResult } from "@/lib/providers/types";
 import { DESTINATIONS } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
+import { cn, flagEmoji } from "@/lib/utils";
 import { useDebounced } from "@/lib/use-debounce";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -121,7 +121,7 @@ export function DestinationSearch({
                 >
                   <span
                     className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-lg",
+                      "flex size-10 shrink-0 items-center justify-center rounded-lg text-lg",
                       r.curated
                         ? "bg-accent/15 text-accent"
                         : "bg-sky/20 text-sky-foreground",
@@ -130,7 +130,7 @@ export function DestinationSearch({
                     {r.curated ? (
                       <Star className="size-5" />
                     ) : (
-                      <MapPin className="size-5" />
+                      <span aria-hidden>{flagEmoji(r.countryCode)}</span>
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
