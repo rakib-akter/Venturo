@@ -30,7 +30,8 @@ export function Footer() {
       </div>
       <div className="border-t border-border/70 px-6 py-4">
         <p className="mx-auto max-w-6xl text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Venturo · A demo travel planner.
+          © {new Date().getFullYear()} Venturo · A demo travel planner ·
+          Worldwide data © OpenStreetMap contributors (ODbL).
         </p>
       </div>
     </footer>
