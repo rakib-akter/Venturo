@@ -78,6 +78,42 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-amber-500/25 via-yellow-500/20 to-stone-500/20",
     emoji: "🐻",
   },
+  {
+    slug: "madrid",
+    city: "Madrid",
+    country: "Spain",
+    tagline: "World-class art, late nights, and endless tapas",
+    description:
+      "Sunny, social, and proudly nocturnal. Madrid pairs the Prado's masterpieces with marathon tapas crawls and grand plazas.",
+    center: { latitude: 40.4168, longitude: -3.7038 },
+    idealDays: [2, 4],
+    heroColor: "from-rose-500/25 via-amber-500/20 to-orange-500/20",
+    emoji: "🇪🇸",
+  },
+  {
+    slug: "vienna",
+    city: "Vienna",
+    country: "Austria",
+    tagline: "Imperial palaces, grand cafés, and Klimt",
+    description:
+      "Elegant and unhurried. Vienna blends Habsburg grandeur with a coffee-house culture made for slow mornings and great cake.",
+    center: { latitude: 48.2082, longitude: 16.3738 },
+    idealDays: [2, 4],
+    heroColor: "from-rose-500/25 via-amber-500/20 to-emerald-500/20",
+    emoji: "🎻",
+  },
+  {
+    slug: "florence",
+    city: "Florence",
+    country: "Italy",
+    tagline: "The Renaissance, on foot and over Tuscan dinners",
+    description:
+      "A walkable open-air museum. Florence packs Botticelli and Michelangelo between artisan workshops and superb Tuscan trattorias.",
+    center: { latitude: 43.7696, longitude: 11.2558 },
+    idealDays: [2, 3],
+    heroColor: "from-amber-500/30 via-orange-500/20 to-emerald-500/20",
+    emoji: "🎨",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
