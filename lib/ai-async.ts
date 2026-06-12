@@ -22,6 +22,7 @@ export async function generateTripAsync(
         slug: prefs.destination,
         displayCity: prefs.displayCity,
         country: prefs.country,
+        countryCode: prefs.countryCode,
         center: prefs.center,
       },
       prefs.source,

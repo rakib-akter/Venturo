@@ -140,6 +140,8 @@ export interface TripPreferences {
   // --- Worldwide (non-curated) destinations -----------------------------
   /** Pretty display name from the geocoder, e.g. "Barcelona". */
   displayCity?: string;
+  /** ISO 3166-1 alpha-2 country code, for the flag emoji. */
+  countryCode?: string;
   /** City center; present for OSM-sourced destinations so we can fetch POIs. */
   center?: Geo;
   /** Which data source backs this destination. Defaults to curated. */

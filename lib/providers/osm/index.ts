@@ -5,6 +5,7 @@ import type {
   DestinationQuery,
 } from "@/lib/providers/types";
 import { OSM_ATTRIBUTION } from "@/lib/providers/config";
+import { flagEmoji } from "@/lib/utils";
 import { fetchAttractions, fetchFood } from "@/lib/providers/osm/overpass";
 import {
   fetchContext,
@@ -42,7 +43,7 @@ function synthesizeDestination(
     center: q.center!,
     idealDays: [2, 4],
     heroColor: GRADIENTS[hashIndex(city, GRADIENTS.length)],
-    emoji: "🌍",
+    emoji: flagEmoji(q.countryCode),
   };
 }
 
