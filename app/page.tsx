@@ -44,7 +44,8 @@ export default function HomePage() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            No account needed to start · Paris, Rome &amp; Montréal ready now
+            Anywhere on earth · 6 cities hand-curated, every other city built
+            live from OpenStreetMap
           </p>
         </div>
       </section>
@@ -87,12 +88,12 @@ export default function HomePage() {
               Start with a city
             </h2>
             <p className="text-muted-foreground">
-              Hand-curated guides, ready to personalize.
+              Hand-curated guides — or search any city in the world.
             </p>
           </div>
           <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
             <Link href="/plan">
-              All destinations <ArrowRight className="size-4" />
+              Search worldwide <ArrowRight className="size-4" />
             </Link>
           </Button>
         </div>
