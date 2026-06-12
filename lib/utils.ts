@@ -39,6 +39,15 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Convert an ISO 3166-1 alpha-2 country code to its flag emoji (e.g. "fr" → 🇫🇷). */
+export function flagEmoji(countryCode?: string): string {
+  if (!countryCode || countryCode.length !== 2) return "🌍";
+  const cc = countryCode.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return "🌍";
+  const codePoints = [...cc].map((c) => 0x1f1e6 + (c.charCodeAt(0) - 65));
+  return String.fromCodePoint(...codePoints);
+}
+
 /** Stable, URL-safe slug from an arbitrary label. */
 export function slugify(value: string): string {
   return value
