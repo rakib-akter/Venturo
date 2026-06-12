@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { tripPreferencesSchema } from "@/lib/validation";
-import { generateTrip } from "@/lib/ai";
+import { generateTripAsync } from "@/lib/ai";
 import type { TripPreferences } from "@/lib/types";
+
+/** Live OSM lookups can take a while on a cold cache. */
+export const maxDuration = 60;
 
 /**
  * POST /api/generate-trip
  * Body: TripPreferences. Returns a fully scored GeneratedTrip.
- * Stateless — runs the scoring engine over the curated dataset.
+ * Curated cities resolve instantly; worldwide cities are built live from
+ * OpenStreetMap (and cached server-side).
  */
 export async function POST(request: Request) {
   let body: unknown;
@@ -24,9 +28,9 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = generateTrip(parsed.data as TripPreferences);
+  const result = await generateTripAsync(parsed.data as TripPreferences);
   if ("error" in result) {
-    return NextResponse.json({ error: result.error }, { status: 404 });
+    return NextResponse.json({ error: result.error }, { status: 422 });
   }
 
   return NextResponse.json(result);
