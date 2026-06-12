@@ -8,6 +8,7 @@ import {
   Sparkles,
   Search,
   Route,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FeatureCard } from "@/components/marketing/FeatureCard";
@@ -77,6 +78,29 @@ export default function HomePage() {
             description="See attractions, food, and hotel zones laid out so distances finally make sense."
             accent="sky"
           />
+        </div>
+      </section>
+
+      {/* Worldwide band */}
+      <section className="mx-auto w-full max-w-6xl px-6 pb-2">
+        <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 shadow-card sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-sky/20 text-sky-foreground">
+              <Globe className="size-5" />
+            </span>
+            <div>
+              <p className="font-display font-semibold">Now worldwide</p>
+              <p className="text-sm text-muted-foreground">
+                Six cities are hand-curated; search any other city and we build it
+                live from OpenStreetMap.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link href="/plan">
+              Try any city <ArrowRight className="size-4" />
+            </Link>
+          </Button>
         </div>
       </section>
 
