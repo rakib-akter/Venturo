@@ -13,6 +13,12 @@ export const OSM = {
   /** POI queries. A few mirrors exist; the main instance is fine for low volume. */
   overpassBase:
     process.env.OVERPASS_BASE_URL ?? "https://overpass-api.de/api/interpreter",
+  /** Fallback Overpass mirrors, tried in order when the primary is busy (429/5xx). */
+  overpassMirrors: [
+    process.env.OVERPASS_BASE_URL ?? "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+  ],
   /** Identifies our app per the Nominatim usage policy. */
   userAgent:
     process.env.OSM_USER_AGENT ??
@@ -20,7 +26,7 @@ export const OSM = {
 } as const;
 
 /** Search radius (meters) around a city center when collecting POIs. */
-export const POI_RADIUS_M = 6000;
+export const POI_RADIUS_M = 4000;
 
 /** Hard caps so an Overpass response can't balloon a trip payload. */
 export const LIMITS = {
@@ -39,8 +45,12 @@ export const CACHE_TTL = {
 /** Network timeouts (ms). Overpass can be slow under load. */
 export const TIMEOUT = {
   nominatim: 12_000,
-  overpass: 30_000,
+  /** Client wait; the Overpass server-side query budget is set lower in the QL. */
+  overpass: 40_000,
 } as const;
+
+/** Server-side Overpass query budget (seconds), embedded in [timeout:N]. */
+export const OVERPASS_QL_TIMEOUT = 25;
 
 /** Attribution required by OpenStreetMap's ODbL license. */
 export const OSM_ATTRIBUTION = "© OpenStreetMap contributors (ODbL)";
