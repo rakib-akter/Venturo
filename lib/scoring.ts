@@ -1,5 +1,6 @@
 import type {
   Budget,
+  Geo,
   HotelPriority,
   Neighborhood,
   Place,
@@ -123,6 +124,7 @@ function hotelPriorityBonus(
 export function scoreAttraction(
   place: Place,
   prefs: TripPreferences,
+  cityCenter?: Geo,
 ): ScoreResult {
   const interestMatch = interestOverlap(place.interests, prefs.interests);
 
@@ -130,16 +132,25 @@ export function scoreAttraction(
   const durationFit = paceDurationFit(place.estimatedDuration, prefs.pace);
 
   const factors: ScoreFactor[] = [
-    { label: "Matches your interests", value: interestMatch, weight: 0.34 },
+    { label: "Matches your interests", value: interestMatch, weight: 0.32 },
     { label: "Must-see popularity", value: place.popularity, weight: 0.22 },
-    { label: "Local & unique", value: place.uniqueness, weight: 0.22 },
-    { label: "Fits your pace", value: durationFit, weight: 0.12 },
+    { label: "Local & unique", value: place.uniqueness, weight: 0.2 },
+    { label: "Fits your pace", value: durationFit, weight: 0.1 },
     {
       label: "Not a tourist trap",
       value: 100 - place.touristTrapRisk,
-      weight: 0.1,
+      weight: 0.08,
     },
   ];
+
+  // Proximity to the city centre stands in for "distance from the hotel zone":
+  // central sights are easier to slot into a day. Only applied when we know the
+  // centre (worldwide trips always do; curated trips pass it too).
+  if (cityCenter) {
+    const km = haversineKm(place.geo, cityCenter);
+    const proximity = clamp(100 - km * 14, 0, 100); // ~7km → 0
+    factors.push({ label: "Central & easy to reach", value: proximity, weight: 0.08 });
+  }
 
   return { score: weightedTotal(factors), factors };
 }

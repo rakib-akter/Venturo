@@ -1,6 +1,7 @@
 import type {
   Destination,
   GeneratedTrip,
+  Geo,
   Neighborhood,
   Place,
   Trip,
@@ -33,12 +34,15 @@ function rankPlaces(
   places: Place[],
   prefs: TripPreferences,
   kind: "attraction" | "food",
+  cityCenter?: Geo,
 ): Place[] {
-  const scoreFn = kind === "attraction" ? scoreAttraction : scoreRestaurant;
   return places
     .map((p) => ({
       place: { ...p, whyItFits: explainFit(p, prefs, kind) },
-      score: scoreFn(p, prefs).score,
+      score:
+        kind === "attraction"
+          ? scoreAttraction(p, prefs, cityCenter).score
+          : scoreRestaurant(p, prefs).score,
     }))
     .sort((a, b) => b.score - a.score)
     .map((s) => s.place);
@@ -133,7 +137,12 @@ export function assembleTrip(
   data: AssembleInput,
   opts: { userId?: string },
 ): GeneratedTrip {
-  const attractions = rankPlaces(data.attractions, prefs, "attraction");
+  const attractions = rankPlaces(
+    data.attractions,
+    prefs,
+    "attraction",
+    data.destination.center,
+  );
   const food = rankPlaces(data.food, prefs, "food");
   const neighborhoods = rankNeighborhoods(
     data.neighborhoods,
