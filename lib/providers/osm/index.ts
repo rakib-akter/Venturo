@@ -7,8 +7,10 @@ import type {
 import { OSM_ATTRIBUTION } from "@/lib/providers/config";
 import { fetchAttractions, fetchFood } from "@/lib/providers/osm/overpass";
 import {
+  fetchContext,
   synthesizeNeighborhoods,
   assignNeighborhoods,
+  type CityContext,
 } from "@/lib/providers/osm/neighborhoods";
 
 const GRADIENTS = [
@@ -56,18 +58,23 @@ export const osmProvider: DestinationProvider = {
     }
     const city = q.displayCity ?? q.slug;
 
-    // Attractions and food are independent; fetch them together, then derive
-    // neighbourhoods from the combined result.
-    const [attractions, food] = await Promise.all([
+    // All three Overpass queries are independent — run them together so total
+    // latency is one round-trip, not three. Context degrades gracefully.
+    const [attractions, food, ctx] = await Promise.all([
       fetchAttractions(q.center, q.slug, city),
       fetchFood(q.center, q.slug, city),
+      fetchContext(q.center).catch<CityContext>(() => ({
+        districts: [],
+        transit: [],
+      })),
     ]);
-    const neighborhoods = await synthesizeNeighborhoods(
+    const neighborhoods = synthesizeNeighborhoods(
       q.center,
       city,
       q.slug,
       attractions,
       food,
+      ctx,
     );
     assignNeighborhoods([...attractions, ...food], neighborhoods);
 
