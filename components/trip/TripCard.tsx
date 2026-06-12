@@ -39,15 +39,19 @@ export function TripCard({
         <div
           className={cn(
             "flex h-28 items-end bg-gradient-to-br p-4",
-            dest?.heroColor ?? "from-slate-300 to-slate-400",
+            dest?.heroColor ?? "from-sky-500/30 via-indigo-500/20 to-rose-400/20",
           )}
         >
-          <span className="absolute right-4 top-4 text-3xl">{dest?.emoji}</span>
+          <span className="absolute right-4 top-4 text-3xl">
+            {dest?.emoji ?? "🌍"}
+          </span>
           <div>
-            <h3 className="font-display text-lg font-semibold">
-              {dest?.city ?? trip.preferences.destination}
+            <h3 className="font-display text-lg font-semibold capitalize">
+              {dest?.city ?? trip.preferences.displayCity ?? trip.preferences.destination}
             </h3>
-            <p className="text-sm text-foreground/70">{dest?.country}</p>
+            <p className="text-sm text-foreground/70">
+              {dest?.country ?? trip.preferences.country}
+            </p>
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-3 p-4">
