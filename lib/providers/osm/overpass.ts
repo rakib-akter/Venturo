@@ -17,6 +17,8 @@ import {
 
 interface OverpassResponse {
   elements: OsmElement[];
+  /** Present when Overpass hit a server-side timeout or runtime error. */
+  remark?: string;
 }
 
 function around(center: Geo): string {
@@ -59,6 +61,11 @@ async function runOverpass(query: string): Promise<OsmElement[]> {
         TIMEOUT.overpass,
         0,
       );
+      // A server-side timeout returns HTTP 200 with empty elements + a remark.
+      // Treat that as a failure so we try another mirror and don't cache it.
+      if ((!res.elements || res.elements.length === 0) && res.remark) {
+        throw new Error(`Overpass remark: ${res.remark}`);
+      }
       return res.elements ?? [];
     } catch (err) {
       lastErr = err; // busy/rate-limited/slow mirror — try the next one

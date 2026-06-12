@@ -41,7 +41,7 @@ async function fetchContext(center: Geo): Promise<CityContext> {
       node["public_transport"="station"](${a});
     );out 400;`;
 
-    let elements: OsmElement[] = [];
+    let elements: OsmElement[] | null = null;
     for (const endpoint of OSM.overpassMirrors) {
       try {
         const res = await postJson<{ elements: OsmElement[] }>(
@@ -55,6 +55,10 @@ async function fetchContext(center: Geo): Promise<CityContext> {
       } catch {
         /* try next mirror */
       }
+    }
+    // If every mirror failed, throw so we don't cache an empty result for days.
+    if (elements === null) {
+      throw new Error("Overpass context query failed on all mirrors");
     }
 
     const districts: District[] = [];
@@ -129,7 +133,14 @@ export async function synthesizeNeighborhoods(
   attractions: Place[],
   food: Place[],
 ): Promise<Neighborhood[]> {
-  const ctx = await fetchContext(center);
+  // Districts/transit are secondary: if Overpass is down, degrade to a single
+  // "city centre" zone rather than failing the whole trip.
+  let ctx: CityContext;
+  try {
+    ctx = await fetchContext(center);
+  } catch {
+    ctx = { districts: [], transit: [] };
+  }
 
   let districts = ctx.districts;
   if (districts.length === 0) {
