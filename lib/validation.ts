@@ -52,6 +52,15 @@ export const tripPreferencesSchema = z
     interests: z.array(interestSchema).default([]),
     foodPreferences: z.array(foodPreferenceSchema).default([]),
     hotelPriorities: z.array(hotelPrioritySchema).default([]),
+    // Worldwide (non-curated) destinations carry a geocoded center + source.
+    displayCity: z.string().optional(),
+    source: z.enum(["curated", "osm"]).optional(),
+    center: z
+      .object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+      })
+      .optional(),
   })
   .refine((p) => p.endDate >= p.startDate, {
     message: "endDate must be on or after startDate",
