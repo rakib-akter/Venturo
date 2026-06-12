@@ -1,4 +1,4 @@
-import { CalendarRange, Users, Sparkles, Wallet } from "lucide-react";
+import { CalendarRange, Users, Sparkles, Wallet, Globe } from "lucide-react";
 import type { Destination, TripPreferences } from "@/lib/types";
 import { cn, formatShortDate, tripDayCount } from "@/lib/utils";
 import { optionLabel } from "@/lib/constants";
@@ -58,6 +58,11 @@ export function TripSummary({
           <Wallet className="size-3" />
           Est. {formatMoney(cost.low)}–{formatMoney(cost.high)}
         </Badge>
+        {preferences.source === "osm" ? (
+          <Badge variant="sky" className="gap-1 bg-card/80 backdrop-blur">
+            <Globe className="size-3" /> Live data
+          </Badge>
+        ) : null}
       </div>
 
       <p className="mt-4 max-w-2xl text-pretty text-foreground/80">{summary}</p>
