@@ -4,6 +4,7 @@ import * as React from "react";
 import { Check, Globe, Loader2, Search, Star } from "lucide-react";
 import type { GeocodeResult } from "@/lib/providers/types";
 import { DESTINATIONS } from "@/lib/mock-data";
+import { POPULAR_WORLDWIDE } from "@/lib/data/popular";
 import { cn, flagEmoji } from "@/lib/utils";
 import { useDebounced } from "@/lib/use-debounce";
 import { Input } from "@/components/ui/input";
@@ -90,6 +91,32 @@ export function DestinationSearch({
         <p className="rounded-xl border border-dashed border-border bg-muted/40 p-3 text-center text-sm text-muted-foreground">
           {error}
         </p>
+      ) : null}
+
+      {showCurated ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Popular worldwide
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {POPULAR_WORLDWIDE.map((r) => (
+              <button
+                key={r.slug}
+                type="button"
+                onClick={() => onSelect(r)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                  value === r.slug
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/40 hover:bg-muted",
+                )}
+              >
+                <span aria-hidden>{flagEmoji(r.countryCode)}</span>
+                {r.city}
+              </button>
+            ))}
+          </div>
+        </div>
       ) : null}
 
       {showCurated ? (
