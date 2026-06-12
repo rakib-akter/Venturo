@@ -8,7 +8,7 @@ import { useTripDraft } from "@/lib/trip-draft";
 import { readProfile } from "@/lib/profile-store";
 import { nightsBetween } from "@/lib/utils";
 import { StepIndicator } from "@/components/trip/StepIndicator";
-import { DestinationPicker } from "@/components/trip/DestinationPicker";
+import { DestinationSearch } from "@/components/trip/DestinationSearch";
 import { NumberStepper } from "@/components/ui/number-stepper";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,14 @@ export function PlanClient() {
     const slug = params.get("destination");
     if (slug && !draft.destination) {
       const d = DESTINATIONS.find((x) => x.slug === slug);
-      if (d) patch({ destination: d.slug, country: d.country });
+      if (d)
+        patch({
+          destination: d.slug,
+          country: d.country,
+          center: d.center,
+          source: "curated",
+          displayCity: d.city,
+        });
     }
     if (!draft.destination && (draft.foodPreferences ?? []).length === 0) {
       const profile = readProfile();
@@ -65,10 +72,17 @@ export function PlanClient() {
         {/* Destination */}
         <section className="space-y-3">
           <Label className="text-base">Destination</Label>
-          <DestinationPicker
-            destinations={DESTINATIONS}
+          <DestinationSearch
             value={draft.destination}
-            onSelect={(slug, country) => patch({ destination: slug, country })}
+            onSelect={(r) =>
+              patch({
+                destination: r.slug,
+                country: r.country,
+                center: r.center,
+                source: r.source,
+                displayCity: r.city,
+              })
+            }
           />
         </section>
 
