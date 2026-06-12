@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { tripPreferencesSchema } from "@/lib/validation";
-import { generateTripAsync } from "@/lib/ai";
+import { generateTripAsync } from "@/lib/ai-async";
 import type { TripPreferences } from "@/lib/types";
 
 /** Live OSM lookups can take a while on a cold cache. */
