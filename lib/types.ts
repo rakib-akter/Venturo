@@ -137,6 +137,13 @@ export interface TripPreferences {
   interests: Interest[];
   foodPreferences: FoodPreference[];
   hotelPriorities: HotelPriority[];
+  // --- Worldwide (non-curated) destinations -----------------------------
+  /** Pretty display name from the geocoder, e.g. "Barcelona". */
+  displayCity?: string;
+  /** City center; present for OSM-sourced destinations so we can fetch POIs. */
+  center?: Geo;
+  /** Which data source backs this destination. Defaults to curated. */
+  source?: "curated" | "osm";
 }
 
 export interface ItineraryItem {
