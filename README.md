@@ -5,11 +5,15 @@ a destination, dates, budget, and travel style, and it recommends **where to
 stay**, **what to do**, **where to eat**, and **how to organize your days** —
 with an interactive map tying it all together.
 
-> MVP scope: Paris, Rome, and Montréal are fully curated. Recommendations are
-> produced by a deterministic, rule-based scoring engine (no API keys needed).
+> **Worldwide, hybrid data.** Six cities (Paris, Rome, Montréal, Amsterdam,
+> London, Berlin) are hand-curated as premium guides; **any other city on earth**
+> is built live from OpenStreetMap. Recommendations come from a deterministic,
+> rule-based scoring engine — no paid APIs, no keys.
 
 ## Features
 
+- **Worldwide destination search** — type any city; curated guides are flagged,
+  everywhere else is geocoded and built live from open data.
 - **Destination search** — pick a city, dates, and travelers.
 - **Preference form** — budget, pace, interests, food, and hotel priorities.
 - **Trip dashboard** — summary, best areas to stay, top attractions, food, and
@@ -62,11 +66,38 @@ lib/
   data/              Curated destinations, neighborhoods, places
   scoring.ts         Weighted neighborhood/attraction/restaurant scoring
   itinerary.ts       Day-by-day route builder
-  ai.ts              Trip generator (orchestrates scoring + itinerary)
+  ai.ts              Curated (sync) trip generator
+  ai-async.ts        Worldwide (async) generator — server only
   geo.ts             Distance + travel-time helpers
   trip-store.ts      Client persistence (localStorage)
   supabase.ts        Supabase client factories (optional)
+  providers/         Hybrid data layer (see below)
+    curated.ts       Curated provider (hand-written guides)
+    osm/             OpenStreetMap provider (Nominatim + Overpass)
 supabase/schema.sql  Database schema + RLS policies
+```
+
+## Worldwide data (the hybrid model)
+
+A `DestinationProvider` abstraction resolves each trip to the best source:
+
+- **Curated provider** — instant, offline, hand-written guides for the six
+  flagship cities.
+- **OSM provider** — for every other city, geocodes via **Nominatim**, pulls
+  attractions and food via **Overpass**, and synthesizes neighbourhoods from
+  OSM districts (or POI clustering). Sparse OSM data is enriched with heuristic
+  scoring proxies (popularity from Wikidata links, uniqueness penalised for
+  chains, tourist-trap risk, etc.), then fed through the *same* scoring engine.
+
+Resilience: Overpass calls rotate across mirrors, short-circuit on timeouts,
+cache results (in-memory, 7-day TTL), and never cache failures. Worldwide trips
+persist a snapshot client-side so revisits and the map don't re-fetch. The
+flow is server-side (`/api/generate-trip`) so OSM code never ships to the
+browser. Live data is attributed per the OpenStreetMap ODbL licence.
+
+```bash
+npm run check:data   # validate the curated dataset
+npm run check:osm    # validate OSM classification + scoring heuristics
 ```
 
 ## Scoring model
