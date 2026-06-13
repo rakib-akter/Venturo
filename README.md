@@ -5,10 +5,12 @@ a destination, dates, budget, and travel style, and it recommends **where to
 stay**, **what to do**, **where to eat**, and **how to organize your days** —
 with an interactive map tying it all together.
 
-> **Worldwide, hybrid data.** Six cities (Paris, Rome, Montréal, Amsterdam,
-> London, Berlin) are hand-curated as premium guides; **any other city on earth**
-> is built live from OpenStreetMap. Recommendations come from a deterministic,
-> rule-based scoring engine — no paid APIs, no keys.
+> **Worldwide, hybrid data.** 16+ destinations — Paris, Rome, Montréal,
+> Amsterdam, London, Berlin, Madrid, Vienna, Florence, **Puglia** (a multi-town
+> region), Lisbon, Porto, Prague, Seville, Venice, Dublin — are hand-curated as
+> premium guides; **any other city on earth** is built live from OpenStreetMap.
+> Recommendations come from a deterministic, rule-based scoring engine — no paid
+> APIs, no keys.
 
 ## Features
 
