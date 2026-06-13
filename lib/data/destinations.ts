@@ -126,6 +126,42 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-sky-500/25 via-amber-500/20 to-emerald-500/20",
     emoji: "🫒",
   },
+  {
+    slug: "lisbon",
+    city: "Lisbon",
+    country: "Portugal",
+    tagline: "Hills, tiles, trams, and pastéis de nata",
+    description:
+      "Sun-washed and soulful, spread over seven hills above the Tagus. Lisbon pairs miradouro views and rattling trams with great seafood and fado.",
+    center: { latitude: 38.7223, longitude: -9.1393 },
+    idealDays: [3, 5],
+    heroColor: "from-amber-500/25 via-rose-500/20 to-sky-500/20",
+    emoji: "🚋",
+  },
+  {
+    slug: "porto",
+    city: "Porto",
+    country: "Portugal",
+    tagline: "Port wine, azulejos, and the Douro riverfront",
+    description:
+      "Atmospheric and compact, tumbling down to the Douro. Porto pairs tiled façades and a UNESCO riverfront with port cellars just across the bridge.",
+    center: { latitude: 41.1579, longitude: -8.6291 },
+    idealDays: [2, 4],
+    heroColor: "from-rose-500/25 via-amber-500/20 to-indigo-500/20",
+    emoji: "🍷",
+  },
+  {
+    slug: "prague",
+    city: "Prague",
+    country: "Czechia",
+    tagline: "Spires, the castle, and the world's best beer",
+    description:
+      "A storybook of Gothic and baroque spires straddling the Vltava. Prague pairs the castle and Charles Bridge with cheap, brilliant beer halls.",
+    center: { latitude: 50.0755, longitude: 14.4378 },
+    idealDays: [2, 4],
+    heroColor: "from-amber-500/25 via-rose-500/20 to-slate-500/20",
+    emoji: "🏰",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =

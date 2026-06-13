@@ -10,6 +10,9 @@ import { MADRID_NEIGHBORHOODS, MADRID_PLACES } from "@/lib/data/madrid";
 import { VIENNA_NEIGHBORHOODS, VIENNA_PLACES } from "@/lib/data/vienna";
 import { FLORENCE_NEIGHBORHOODS, FLORENCE_PLACES } from "@/lib/data/florence";
 import { PUGLIA_NEIGHBORHOODS, PUGLIA_PLACES } from "@/lib/data/puglia";
+import { LISBON_NEIGHBORHOODS, LISBON_PLACES } from "@/lib/data/lisbon";
+import { PORTO_NEIGHBORHOODS, PORTO_PLACES } from "@/lib/data/porto";
+import { PRAGUE_NEIGHBORHOODS, PRAGUE_PLACES } from "@/lib/data/prague";
 
 /**
  * The single in-memory data source for the MVP. Aggregates every city's
@@ -30,6 +33,9 @@ export const NEIGHBORHOODS: Neighborhood[] = [
   ...VIENNA_NEIGHBORHOODS,
   ...FLORENCE_NEIGHBORHOODS,
   ...PUGLIA_NEIGHBORHOODS,
+  ...LISBON_NEIGHBORHOODS,
+  ...PORTO_NEIGHBORHOODS,
+  ...PRAGUE_NEIGHBORHOODS,
 ];
 
 export const PLACES: Place[] = [
@@ -43,6 +49,9 @@ export const PLACES: Place[] = [
   ...VIENNA_PLACES,
   ...FLORENCE_PLACES,
   ...PUGLIA_PLACES,
+  ...LISBON_PLACES,
+  ...PORTO_PLACES,
+  ...PRAGUE_PLACES,
 ];
 
 const PLACE_BY_ID: Record<string, Place> = Object.fromEntries(
