@@ -198,6 +198,42 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-emerald-500/30 via-teal-500/20 to-amber-500/20",
     emoji: "🍀",
   },
+  {
+    slug: "edinburgh",
+    city: "Edinburgh",
+    country: "United Kingdom",
+    tagline: "A castle on a crag, closes, and crags to climb",
+    description:
+      "Dramatic and atmospheric, built on volcanic hills. Edinburgh pairs its clifftop castle and medieval Old Town with Georgian elegance and wild views.",
+    center: { latitude: 55.9533, longitude: -3.1883 },
+    idealDays: [2, 3],
+    heroColor: "from-slate-500/25 via-indigo-500/20 to-emerald-500/20",
+    emoji: "🏴",
+  },
+  {
+    slug: "budapest",
+    city: "Budapest",
+    country: "Hungary",
+    tagline: "Thermal baths, ruin bars, and Danube grandeur",
+    description:
+      "Grand and gritty across the Danube. Budapest pairs Parliament and Castle Hill with steaming thermal baths and the famous ruin-bar nightlife.",
+    center: { latitude: 47.4979, longitude: 19.0402 },
+    idealDays: [2, 4],
+    heroColor: "from-amber-500/25 via-emerald-500/20 to-sky-500/20",
+    emoji: "🛁",
+  },
+  {
+    slug: "copenhagen",
+    city: "Copenhagen",
+    country: "Denmark",
+    tagline: "Bikes, harbours, hygge, and New Nordic food",
+    description:
+      "Effortlessly cool and bike-friendly. Copenhagen pairs Nyhavn's painted harbour and Tivoli with a world-leading food scene and design at every turn.",
+    center: { latitude: 55.6761, longitude: 12.5683 },
+    idealDays: [2, 4],
+    heroColor: "from-sky-500/25 via-rose-500/20 to-emerald-500/20",
+    emoji: "🚲",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
