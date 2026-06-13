@@ -162,6 +162,42 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-amber-500/25 via-rose-500/20 to-slate-500/20",
     emoji: "🏰",
   },
+  {
+    slug: "seville",
+    city: "Seville",
+    country: "Spain",
+    tagline: "Alcázar palaces, flamenco, and endless tapas",
+    description:
+      "Hot-blooded and beautiful, the soul of Andalucía. Seville pairs Mudéjar palaces and orange-tree patios with flamenco and a legendary tapas scene.",
+    center: { latitude: 37.3891, longitude: -5.9845 },
+    idealDays: [2, 4],
+    heroColor: "from-orange-500/30 via-amber-500/20 to-rose-500/20",
+    emoji: "💃",
+  },
+  {
+    slug: "venice",
+    city: "Venice",
+    country: "Italy",
+    tagline: "Canals, cicchetti, and impossible beauty",
+    description:
+      "A city on water unlike anywhere else. Venice pairs St Mark's grandeur and the Grand Canal with quiet back-canal bacari and morning markets.",
+    center: { latitude: 45.4408, longitude: 12.3155 },
+    idealDays: [2, 3],
+    heroColor: "from-sky-500/25 via-emerald-500/20 to-amber-500/20",
+    emoji: "🛶",
+  },
+  {
+    slug: "dublin",
+    city: "Dublin",
+    country: "Ireland",
+    tagline: "Georgian streets, great museums, and proper pubs",
+    description:
+      "Compact, literary, and famously warm. Dublin pairs Trinity's treasures and free museums with trad-music sessions and a perfect pint of Guinness.",
+    center: { latitude: 53.3498, longitude: -6.2603 },
+    idealDays: [2, 3],
+    heroColor: "from-emerald-500/30 via-teal-500/20 to-amber-500/20",
+    emoji: "🍀",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
