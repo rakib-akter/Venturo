@@ -25,15 +25,18 @@ export function walkMinutes(km: number): number {
 }
 
 /**
- * Realistic point-to-point travel minutes in a dense city: short hops are
- * walked, longer ones assume metro/taxi at a higher effective speed plus a
- * fixed access overhead.
+ * Realistic point-to-point travel minutes. Short hops are walked; medium hops
+ * use city transit (metro/taxi); long regional hops (e.g. between towns on a
+ * Puglia road trip) assume driving on regional roads. Each tier adds a small
+ * fixed access/parking overhead.
  */
 export function travelMinutes(a: Geo, b: Geo): number {
   const km = haversineKm(a, b);
   if (km <= 1.1) return Math.max(3, walkMinutes(km));
-  // metro/taxi: ~18 km/h effective + ~6 min to get in/out of the system
-  return Math.round((km / 18) * 60) + 6;
+  // city transit: ~18 km/h effective + ~6 min to get in/out of the system
+  if (km <= 12) return Math.round((km / 18) * 60) + 6;
+  // regional drive: ~62 km/h effective (winding roads) + ~10 min to park
+  return Math.round((km / 62) * 60) + 10;
 }
 
 /** Centroid of a set of coordinates (simple average; fine at city scale). */
