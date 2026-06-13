@@ -68,7 +68,23 @@ export function DestinationSearch({
   }, [debounced]);
 
   const showCurated = query.trim().length < 2;
-  const list = showCurated ? CURATED_RESULTS : results;
+
+  // When typing, always surface matching curated guides first (so e.g. "Puglia"
+  // is found even if the geocoder returns it under a different name), then the
+  // live geocoded results, de-duplicated by slug.
+  const q = query.trim().toLowerCase();
+  const curatedMatches = q
+    ? CURATED_RESULTS.filter(
+        (r) =>
+          r.city.toLowerCase().includes(q) ||
+          r.country.toLowerCase().includes(q) ||
+          r.slug.includes(q),
+      )
+    : [];
+  const curatedSlugs = new Set(curatedMatches.map((r) => r.slug));
+  const list = showCurated
+    ? CURATED_RESULTS
+    : [...curatedMatches, ...results.filter((r) => !curatedSlugs.has(r.slug))];
 
   return (
     <div className="space-y-4">
