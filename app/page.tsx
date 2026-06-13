@@ -45,8 +45,8 @@ export default function HomePage() {
             </Button>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Anywhere on earth · 6 cities hand-curated, every other city built
-            live from OpenStreetMap
+            Anywhere on earth · {DESTINATIONS.length} destinations hand-curated,
+            every other city built live from OpenStreetMap
           </p>
         </div>
       </section>
@@ -91,8 +91,8 @@ export default function HomePage() {
             <div>
               <p className="font-display font-semibold">Now worldwide</p>
               <p className="text-sm text-muted-foreground">
-                Six cities are hand-curated; search any other city and we build it
-                live from OpenStreetMap.
+                {DESTINATIONS.length} destinations are hand-curated; search any
+                other city and we build it live from OpenStreetMap.
               </p>
             </div>
           </div>
