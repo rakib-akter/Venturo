@@ -114,6 +114,18 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-amber-500/30 via-orange-500/20 to-emerald-500/20",
     emoji: "🎨",
   },
+  {
+    slug: "puglia",
+    city: "Puglia",
+    country: "Italy",
+    tagline: "Trulli, white towns, sea cliffs, and orecchiette",
+    description:
+      "The sun-baked heel of Italy — whitewashed hill-towns, UNESCO trulli, Adriatic and Ionian coves, and some of the country's best home cooking. A region made for a slow road trip between a couple of bases.",
+    center: { latitude: 40.7560, longitude: 17.4100 },
+    idealDays: [4, 7],
+    heroColor: "from-sky-500/25 via-amber-500/20 to-emerald-500/20",
+    emoji: "🫒",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
