@@ -282,6 +282,18 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-amber-500/25 via-rose-500/20 to-indigo-500/20",
     emoji: "🍺",
   },
+  {
+    slug: "amalfi-coast",
+    city: "Amalfi Coast",
+    country: "Italy",
+    tagline: "Cliffside villages, lemons, and the bluest sea",
+    description:
+      "Italy's most dramatic coastline — pastel villages stacked on vertical cliffs, lemon terraces, and turquoise coves. A region for slow days between a base or two, by boat, bus, and the Path of the Gods.",
+    center: { latitude: 40.6340, longitude: 14.5700 },
+    idealDays: [4, 7],
+    heroColor: "from-sky-500/25 via-emerald-500/20 to-amber-500/20",
+    emoji: "🍋",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
