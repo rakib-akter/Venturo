@@ -270,6 +270,18 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-amber-500/25 via-rose-500/20 to-emerald-500/20",
     emoji: "🐉",
   },
+  {
+    slug: "brussels",
+    city: "Brussels",
+    country: "Belgium",
+    tagline: "Grand-Place, beer, frites, and Art Nouveau",
+    description:
+      "Underrated and full of charm. Brussels pairs the gilded Grand-Place and surrealist art with world-class beer, frites, and elegant Art Nouveau quarters.",
+    center: { latitude: 50.8503, longitude: 4.3517 },
+    idealDays: [2, 3],
+    heroColor: "from-amber-500/25 via-rose-500/20 to-indigo-500/20",
+    emoji: "🍺",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
