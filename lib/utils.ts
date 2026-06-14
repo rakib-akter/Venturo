@@ -51,6 +51,8 @@ export function flagEmoji(countryCode?: string): string {
 /** Stable, URL-safe slug from an arbitrary label. */
 export function slugify(value: string): string {
   return value
+    .normalize("NFD") // decompose accents so "Montréal" → "montreal", "Málaga" → "malaga"
+    .replace(new RegExp("[\\u0300-\\u036f]", "g"), "") // strip combining diacritics
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
