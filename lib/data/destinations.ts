@@ -234,6 +234,42 @@ export const DESTINATIONS: Destination[] = [
     heroColor: "from-sky-500/25 via-rose-500/20 to-emerald-500/20",
     emoji: "🚲",
   },
+  {
+    slug: "athens",
+    city: "Athens",
+    country: "Greece",
+    tagline: "The Acropolis, ancient ruins, and great meze",
+    description:
+      "Where Western civilization began, still gloriously chaotic. Athens pairs the Acropolis and ancient agoras with rooftop bars and a brilliant food scene.",
+    center: { latitude: 37.9838, longitude: 23.7275 },
+    idealDays: [2, 4],
+    heroColor: "from-sky-500/25 via-amber-500/20 to-stone-500/20",
+    emoji: "🏺",
+  },
+  {
+    slug: "naples",
+    city: "Naples",
+    country: "Italy",
+    tagline: "Pizza's birthplace, Pompeii, and pure energy",
+    description:
+      "Raw, intense, and unforgettable — the home of pizza beneath Vesuvius. Naples pairs chaotic old-town life with Pompeii, the bay, and incredible food.",
+    center: { latitude: 40.8518, longitude: 14.2681 },
+    idealDays: [2, 4],
+    heroColor: "from-red-500/25 via-amber-500/20 to-sky-500/20",
+    emoji: "🍕",
+  },
+  {
+    slug: "krakow",
+    city: "Kraków",
+    country: "Poland",
+    tagline: "A medieval square, Kazimierz, and deep history",
+    description:
+      "One of Europe's most beautiful and affordable old towns. Kraków pairs its vast market square and Wawel Castle with atmospheric Kazimierz and powerful WWII history.",
+    center: { latitude: 50.0647, longitude: 19.9450 },
+    idealDays: [2, 4],
+    heroColor: "from-amber-500/25 via-rose-500/20 to-emerald-500/20",
+    emoji: "🐉",
+  },
 ];
 
 export const DESTINATION_BY_SLUG: Record<string, Destination> =
