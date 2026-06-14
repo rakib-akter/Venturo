@@ -11,7 +11,8 @@
     "check:osm": "tsx scripts/check-osm.ts",
     "check:scoring": "tsx scripts/check-scoring.ts",
     "check:itinerary": "tsx scripts/check-itinerary.ts",
-    "test": "npm run check:data && npm run check:osm && npm run check:scoring && npm run check:itinerary"
+    "check:utils": "tsx scripts/check-utils.ts",
+    "test": "npm run check:utils && npm run check:data && npm run check:osm && npm run check:scoring && npm run check:itinerary"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.2.8",
