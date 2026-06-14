@@ -1,66 +1,41 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isDbConfigured } from "@/lib/db";
+import { getSessionUserId } from "@/lib/auth";
+import { getTrip, deleteTrip } from "@/lib/server/trips-repo";
 
-/**
- * GET /api/trips/[id]
- * Fetches a single persisted trip and its saved places. Requires Supabase.
- */
+async function requireUser() {
+  if (!isDbConfigured()) {
+    return { error: NextResponse.json({ error: "Cloud is not configured." }, { status: 503 }) };
+  }
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
+  }
+  return { userId };
+}
+
+/** GET /api/trips/[id] — a single trip belonging to the user. */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json(
-      { error: "Persistence is not configured." },
-      { status: 503 },
-    );
-  }
+  const auth = await requireUser();
+  if ("error" in auth) return auth.error;
   const { id } = await params;
-  const supabase = createServerSupabase()!;
-
-  const { data: trip, error } = await supabase
-    .from("trips")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    return NextResponse.json(
-      { error: error.message },
-      { status: error.code === "PGRST116" ? 404 : 500 },
-    );
-  }
-
-  const { data: saved } = await supabase
-    .from("saved_places")
-    .select("place_id")
-    .eq("trip_id", id);
-
-  return NextResponse.json({
-    trip,
-    savedPlaceIds: (saved ?? []).map((s) => s.place_id),
-  });
+  const trip = await getTrip(auth.userId, id);
+  if (!trip) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  return NextResponse.json({ trip });
 }
 
-/**
- * DELETE /api/trips/[id]
- */
+/** DELETE /api/trips/[id] */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json(
-      { error: "Persistence is not configured." },
-      { status: 503 },
-    );
-  }
+  const auth = await requireUser();
+  if ("error" in auth) return auth.error;
   const { id } = await params;
-  const supabase = createServerSupabase()!;
-
-  const { error } = await supabase.from("trips").delete().eq("id", id);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  const ok = await deleteTrip(auth.userId, id);
+  if (!ok) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ deleted: id });
 }

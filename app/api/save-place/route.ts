@@ -1,67 +1,44 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isDbConfigured } from "@/lib/db";
+import { getSessionUserId } from "@/lib/auth";
+import { addSavedPlace, removeSavedPlace } from "@/lib/server/trips-repo";
 import { savePlaceSchema } from "@/lib/validation";
 
-function notConfigured() {
-  return NextResponse.json(
-    { error: "Persistence is not configured." },
-    { status: 503 },
-  );
-}
-
-async function parseBody(request: Request) {
+async function authed(request: Request) {
+  if (!isDbConfigured()) {
+    return { error: NextResponse.json({ error: "Cloud is not configured." }, { status: 503 }) };
+  }
+  const userId = await getSessionUserId();
+  if (!userId) {
+    return { error: NextResponse.json({ error: "Not signed in" }, { status: 401 }) };
+  }
+  let body: unknown;
   try {
-    return savePlaceSchema.safeParse(await request.json());
+    body = await request.json();
   } catch {
-    return null;
+    return { error: NextResponse.json({ error: "Invalid JSON body" }, { status: 400 }) };
   }
+  const parsed = savePlaceSchema.safeParse(body);
+  if (!parsed.success) {
+    return { error: NextResponse.json({ error: "Invalid body" }, { status: 422 }) };
+  }
+  return { userId, ...parsed.data };
 }
 
-/**
- * POST /api/save-place  { tripId, placeId }
- * Saves a place to a trip (idempotent via unique constraint).
- */
+/** POST /api/save-place { tripId, placeId } */
 export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) return notConfigured();
-  const parsed = await parseBody(request);
-  if (!parsed || !parsed.success) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 422 });
-  }
-  const supabase = createServerSupabase()!;
-  const { tripId, placeId } = parsed.data;
-
-  const { error } = await supabase
-    .from("saved_places")
-    .upsert(
-      { trip_id: tripId, place_id: placeId },
-      { onConflict: "trip_id,place_id" },
-    );
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ saved: true, tripId, placeId }, { status: 201 });
+  const a = await authed(request);
+  if ("error" in a) return a.error;
+  const ok = await addSavedPlace(a.userId, a.tripId, a.placeId);
+  if (!ok) return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+  return NextResponse.json({ saved: true, tripId: a.tripId, placeId: a.placeId }, { status: 201 });
 }
 
-/**
- * DELETE /api/save-place  { tripId, placeId }
- * Removes a saved place from a trip.
- */
+/** DELETE /api/save-place { tripId, placeId } */
 export async function DELETE(request: Request) {
-  if (!isSupabaseConfigured()) return notConfigured();
-  const parsed = await parseBody(request);
-  if (!parsed || !parsed.success) {
-    return NextResponse.json({ error: "Invalid body" }, { status: 422 });
-  }
-  const supabase = createServerSupabase()!;
-  const { tripId, placeId } = parsed.data;
-
-  const { error } = await supabase
-    .from("saved_places")
-    .delete()
-    .eq("trip_id", tripId)
-    .eq("place_id", placeId);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ saved: false, tripId, placeId });
+  const a = await authed(request);
+  if ("error" in a) return a.error;
+  const ok = await removeSavedPlace(a.userId, a.tripId, a.placeId);
+  if (!ok) return NextResponse.json({ error: "Trip not found" }, { status: 404 });
+  return NextResponse.json({ saved: false, tripId: a.tripId, placeId: a.placeId });
 }

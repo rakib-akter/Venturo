@@ -1,82 +1,55 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase, isSupabaseConfigured } from "@/lib/supabase";
+import { isDbConfigured } from "@/lib/db";
+import { getSessionUserId } from "@/lib/auth";
+import { listTrips, createTrip } from "@/lib/server/trips-repo";
 import { tripPreferencesSchema } from "@/lib/validation";
+import type { TripPreferences } from "@/lib/types";
 
-const NOT_CONFIGURED = NextResponse.json(
-  {
-    error:
-      "Persistence is not configured. Set Supabase env vars and run supabase/schema.sql to enable saved trips.",
-  },
-  { status: 503 },
-);
-
-/**
- * GET /api/trips?userId=...
- * Lists persisted trips. Requires Supabase to be configured.
- */
-export async function GET(request: Request) {
-  if (!isSupabaseConfigured()) return NOT_CONFIGURED;
-  const supabase = createServerSupabase()!;
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get("userId");
-
-  let query = supabase
-    .from("trips")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (userId) query = query.eq("user_id", userId);
-
-  const { data, error } = await query;
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+function guard() {
+  if (!isDbConfigured()) {
+    return NextResponse.json({ error: "Cloud is not configured." }, { status: 503 });
   }
-  return NextResponse.json({ count: data.length, trips: data });
+  return null;
 }
 
-/**
- * POST /api/trips
- * Persists a trip from validated preferences. Requires Supabase.
- */
-export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) return NOT_CONFIGURED;
-  const supabase = createServerSupabase()!;
+/** GET /api/trips — the signed-in user's trips. */
+export async function GET() {
+  const blocked = guard();
+  if (blocked) return blocked;
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
-  let body: unknown;
+  const trips = await listTrips(userId);
+  return NextResponse.json({ count: trips.length, trips });
+}
+
+/** POST /api/trips — create (or idempotently sync) a trip for the user. */
+export async function POST(request: Request) {
+  const blocked = guard();
+  if (blocked) return blocked;
+  const userId = await getSessionUserId();
+  if (!userId) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+
+  let body: { preferences?: unknown; id?: string; snapshot?: unknown; createdAt?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const parsed = tripPreferencesSchema.safeParse(
-    (body as { preferences?: unknown })?.preferences ?? body,
-  );
+  const parsed = tripPreferencesSchema.safeParse(body.preferences ?? body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid preferences", issues: parsed.error.flatten() },
       { status: 422 },
     );
   }
-  const p = parsed.data;
 
-  const { data, error } = await supabase
-    .from("trips")
-    .insert({
-      user_id: (body as { userId?: string })?.userId ?? null,
-      destination: p.destination,
-      country: p.country ?? null,
-      start_date: p.startDate,
-      end_date: p.endDate,
-      budget: p.budget,
-      travel_pace: p.pace,
-      interests: p.interests,
-      food_preferences: p.foodPreferences,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-  return NextResponse.json({ trip: data }, { status: 201 });
+  const trip = await createTrip(userId, parsed.data as TripPreferences, {
+    id: typeof body.id === "string" ? body.id : undefined,
+    createdAt: typeof body.createdAt === "string" ? body.createdAt : undefined,
+    // snapshot is large + already validated upstream; store as-is when present.
+    snapshot: body.snapshot as never,
+  });
+  return NextResponse.json({ trip }, { status: 201 });
 }
