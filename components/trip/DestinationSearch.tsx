@@ -10,6 +10,9 @@ import { useDebounced } from "@/lib/use-debounce";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
+/** In-session cache of geocode responses so repeat searches are instant. */
+const geocodeCache = new Map<string, GeocodeResult[]>();
+
 /** Curated cities surfaced as quick picks when the search box is empty. */
 const CURATED_RESULTS: GeocodeResult[] = DESTINATIONS.map((d) => ({
   slug: d.slug,
@@ -42,6 +45,15 @@ export function DestinationSearch({
       setLoading(false);
       return;
     }
+    // Serve repeat queries from the in-session cache without a round-trip.
+    const cacheKey = q.toLowerCase();
+    const hit = geocodeCache.get(cacheKey);
+    if (hit) {
+      setResults(hit);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -53,7 +65,9 @@ export function DestinationSearch({
           setError("Search is unavailable right now. Try a curated city below.");
           setResults([]);
         } else {
-          setResults(data.results ?? []);
+          const list = data.results ?? [];
+          geocodeCache.set(cacheKey, list);
+          setResults(list);
         }
       })
       .catch(() => {
