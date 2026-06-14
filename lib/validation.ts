@@ -72,4 +72,22 @@ export const savePlaceSchema = z.object({
   placeId: z.string().min(1),
 });
 
+export const signupSchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(8, "Use at least 8 characters").max(200),
+  fullName: z.string().max(120).optional(),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(1).max(200),
+});
+
+export const profileUpdateSchema = z.object({
+  fullName: z.string().max(120).optional(),
+  defaultBudget: budgetSchema.optional(),
+  defaultTravelStyle: paceSchema.optional(),
+  foodPreferences: z.array(foodPreferenceSchema).optional(),
+});
+
 export type TripPreferencesInput = z.infer<typeof tripPreferencesSchema>;
