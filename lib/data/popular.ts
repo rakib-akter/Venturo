@@ -14,4 +14,8 @@ export const POPULAR_WORLDWIDE: GeocodeResult[] = [
   { slug: "mexico-city", city: "Mexico City", country: "Mexico", countryCode: "mx", center: { latitude: 19.4326, longitude: -99.1332 }, source: "osm", curated: false },
   { slug: "seoul", city: "Seoul", country: "South Korea", countryCode: "kr", center: { latitude: 37.5665, longitude: 126.978 }, source: "osm", curated: false },
   { slug: "marrakech", city: "Marrakech", country: "Morocco", countryCode: "ma", center: { latitude: 31.6295, longitude: -7.9811 }, source: "osm", curated: false },
+  { slug: "kyoto", city: "Kyoto", country: "Japan", countryCode: "jp", center: { latitude: 35.0116, longitude: 135.7681 }, source: "osm", curated: false },
+  { slug: "buenos-aires", city: "Buenos Aires", country: "Argentina", countryCode: "ar", center: { latitude: -34.6037, longitude: -58.3816 }, source: "osm", curated: false },
+  { slug: "cape-town", city: "Cape Town", country: "South Africa", countryCode: "za", center: { latitude: -33.9249, longitude: 18.4241 }, source: "osm", curated: false },
+  { slug: "singapore", city: "Singapore", country: "Singapore", countryCode: "sg", center: { latitude: 1.3521, longitude: 103.8198 }, source: "osm", curated: false },
 ];
