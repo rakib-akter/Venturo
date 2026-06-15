@@ -1,16 +1,8 @@
 import { query, queryOne } from "@/lib/db";
-import type { Budget, FoodPreference, TravelPace } from "@/lib/types";
+import type { Budget, FoodPreference, PublicUser, TravelPace } from "@/lib/types";
 
 /** Public-facing user (never includes the password hash). */
-export interface AuthUser {
-  id: string;
-  email: string;
-  fullName: string | null;
-  defaultBudget: Budget | null;
-  defaultTravelStyle: TravelPace | null;
-  foodPreferences: FoodPreference[];
-  createdAt: string;
-}
+export type AuthUser = PublicUser;
 
 interface UserRow {
   id: string;

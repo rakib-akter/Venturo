@@ -210,3 +210,14 @@ export interface UserProfile {
   foodPreferences: FoodPreference[];
   createdAt: string;
 }
+
+/** The authenticated user as exposed to the client (no password hash). */
+export interface PublicUser {
+  id: string;
+  email: string;
+  fullName: string | null;
+  defaultBudget: Budget | null;
+  defaultTravelStyle: TravelPace | null;
+  foodPreferences: FoodPreference[];
+  createdAt: string;
+}
