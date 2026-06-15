@@ -81,4 +81,45 @@ export async function updateUserProfile(
   return row ? toAuthUser(row) : null;
 }
 
+export async function setPassword(
+  userId: string,
+  passwordHash: string,
+): Promise<void> {
+  await query("update venturo.users set password_hash = $2 where id = $1", [
+    userId,
+    passwordHash,
+  ]);
+}
+
+// --- Password reset tokens --------------------------------------------------
+
+export async function createResetToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: Date,
+): Promise<void> {
+  // Invalidate any outstanding tokens, then store the new one.
+  await query("delete from venturo.password_reset_tokens where user_id = $1", [
+    userId,
+  ]);
+  await query(
+    `insert into venturo.password_reset_tokens (token_hash, user_id, expires_at)
+     values ($1, $2, $3)`,
+    [tokenHash, userId, expiresAt.toISOString()],
+  );
+}
+
+/** Returns the userId for a valid, unexpired token, then consumes it. */
+export async function consumeResetToken(
+  tokenHash: string,
+): Promise<string | null> {
+  const row = await queryOne<{ user_id: string }>(
+    `delete from venturo.password_reset_tokens
+     where token_hash = $1 and expires_at > now()
+     returning user_id`,
+    [tokenHash],
+  );
+  return row?.user_id ?? null;
+}
+
 export { toAuthUser };

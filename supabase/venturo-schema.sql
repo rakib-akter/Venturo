@@ -28,6 +28,16 @@ create table if not exists venturo.trips (
 );
 create index if not exists trips_user_id_idx on venturo.trips(user_id);
 
+-- Password reset tokens. We store only the SHA-256 hash of the token; the raw
+-- token lives only in the emailed link. Single-use and short-lived.
+create table if not exists venturo.password_reset_tokens (
+  token_hash text primary key,
+  user_id uuid not null references venturo.users(id) on delete cascade,
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists prt_user_id_idx on venturo.password_reset_tokens(user_id);
+
 -- Saved places, scoped to a trip (and therefore a user via the FK).
 create table if not exists venturo.saved_places (
   id uuid primary key default gen_random_uuid(),

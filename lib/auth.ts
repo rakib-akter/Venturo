@@ -1,4 +1,10 @@
-import { randomBytes, scrypt, timingSafeEqual, createHmac } from "node:crypto";
+import {
+  randomBytes,
+  scrypt,
+  timingSafeEqual,
+  createHmac,
+  createHash,
+} from "node:crypto";
 import { promisify } from "node:util";
 import { cookies } from "next/headers";
 
@@ -75,6 +81,18 @@ export function verifySession(token: string | undefined): string | null {
   } catch {
     return null;
   }
+}
+
+// --- Password reset tokens --------------------------------------------------
+
+/** A raw, URL-safe reset token (goes in the emailed link, never stored). */
+export function makeResetToken(): string {
+  return randomBytes(32).toString("base64url");
+}
+
+/** SHA-256 of a token — only the hash is stored in the database. */
+export function hashToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 // --- Cookie helpers ---------------------------------------------------------
