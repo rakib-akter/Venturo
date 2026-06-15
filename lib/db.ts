@@ -23,10 +23,12 @@ function getPool(): Pool {
     globalForDb._venturoPool = new Pool({
       connectionString: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
-      max: 5,
-      idleTimeoutMillis: 30_000,
-      // Default every connection to the venturo schema first.
-      options: "-c search_path=venturo,public",
+      // Small pool: serverless functions are short-lived and the Supabase
+      // transaction pooler (recommended for Vercel) multiplexes connections.
+      max: 3,
+      idleTimeoutMillis: 10_000,
+      // No `search_path` startup option here — every query is schema-qualified
+      // (venturo.*), which keeps us compatible with pgbouncer transaction mode.
     });
   }
   return globalForDb._venturoPool;

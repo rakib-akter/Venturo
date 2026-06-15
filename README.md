@@ -111,15 +111,38 @@ by your hotel priorities. Attractions and restaurants are scored on interest/
 cuisine match, rating, uniqueness, budget fit, and a tourist-trap penalty. See
 [`lib/scoring.ts`](lib/scoring.ts).
 
-## Enabling Supabase persistence
+## Accounts & cloud sync
 
-1. Copy `.env.example` to `.env.local` and fill in your Supabase URL + keys.
-2. Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor.
-3. The `/api/trips` and `/api/save-place` routes switch from `503` to live.
+Email/password accounts and cross-device trip sync run on **direct Postgres**
+(no Supabase Auth needed). Everything lives in an isolated `venturo` schema, so
+it's safe to share a database with another app. Passwords use scrypt; sessions
+are HMAC-signed cookies; password reset is single-use, hashed, 1-hour tokens.
+
+1. Copy `.env.example` to `.env.local` and set `DATABASE_URL` + `SESSION_SECRET`.
+2. Create the schema: `npm run db:migrate`.
+3. (Optional) Set `RESEND_API_KEY` + `EMAIL_FROM` to actually send reset emails —
+   without them the flow still works and the link is logged / returned in dev.
+
+The app runs fully without any of this (browser localStorage); accounts just
+add durable, cross-device storage.
+
+## Deploy to Vercel
+
+Next.js deploys zero-config. Set these environment variables in the Vercel
+project (Settings → Environment Variables):
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | Supabase **transaction pooler** URL (port `6543`, `?pgbouncer=true`) — best for serverless |
+| `SESSION_SECRET` | `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
+| `NEXT_PUBLIC_APP_URL` | your deployment URL, e.g. `https://venturo.vercel.app` (used in reset links) |
+| `RESEND_API_KEY` / `EMAIL_FROM` | optional, to send password-reset emails |
+
+Run `npm run db:migrate` once (locally, against the same database) to create the
+schema. Then import the repo on Vercel, or `vercel --prod`.
 
 ## Roadmap
 
 - Real map tiles (Mapbox/Google) behind the schematic view
-- Supabase Auth + server-synced trips
 - More destinations and live place data
 - Swap the rule-based generator for an LLM behind the same `generateTrip` API
