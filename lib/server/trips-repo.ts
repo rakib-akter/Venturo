@@ -64,10 +64,16 @@ export async function createTrip(
   preferences: TripPreferences,
   opts: { id?: string; snapshot?: GeneratedTrip; createdAt?: string } = {},
 ): Promise<CloudTrip> {
+  // Upsert: lets the client mirror a trip on create and later attach its
+  // generated snapshot. The owner guard ensures one user can never overwrite
+  // another user's row even if ids somehow collided.
   const row = await queryOne<{ id: string; created_at: string }>(
     `insert into venturo.trips (id, user_id, preferences, snapshot, created_at)
      values (coalesce($1, gen_random_uuid()), $2, $3, $4, coalesce($5, now()))
-     on conflict (id) do nothing
+     on conflict (id) do update
+       set preferences = excluded.preferences,
+           snapshot = coalesce(excluded.snapshot, venturo.trips.snapshot)
+       where venturo.trips.user_id = excluded.user_id
      returning id, created_at`,
     [
       opts.id ?? null,
@@ -77,15 +83,16 @@ export async function createTrip(
       opts.createdAt ?? null,
     ],
   );
-  // If the id already existed (idempotent sync), fetch the existing trip.
+  // Conflict on a row the user doesn't own → no update happened.
   if (!row) {
     const existing = opts.id ? await getTrip(userId, opts.id) : null;
     if (existing) return existing;
+    throw new Error("Could not create trip");
   }
   return {
-    id: row!.id,
+    id: row.id,
     preferences,
-    createdAt: row!.created_at,
+    createdAt: row.created_at,
     savedPlaceIds: [],
     snapshot: opts.snapshot,
   };

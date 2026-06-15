@@ -18,8 +18,9 @@ create table if not exists venturo.users (
 
 -- Trips: the whole TripPreferences is stored as JSON; worldwide (OSM) trips
 -- also cache their generated plan snapshot so it survives across devices.
+-- `id` is text so client-generated ids (uuid, or any stable string) sync as-is.
 create table if not exists venturo.trips (
-  id uuid primary key default gen_random_uuid(),
+  id text primary key default gen_random_uuid()::text,
   user_id uuid not null references venturo.users(id) on delete cascade,
   preferences jsonb not null,
   snapshot jsonb,
@@ -30,7 +31,7 @@ create index if not exists trips_user_id_idx on venturo.trips(user_id);
 -- Saved places, scoped to a trip (and therefore a user via the FK).
 create table if not exists venturo.saved_places (
   id uuid primary key default gen_random_uuid(),
-  trip_id uuid not null references venturo.trips(id) on delete cascade,
+  trip_id text not null references venturo.trips(id) on delete cascade,
   place_id text not null,
   created_at timestamptz not null default now(),
   unique (trip_id, place_id)
