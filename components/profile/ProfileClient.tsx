@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Check, LogOut, UserRound } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Check, LogIn, LogOut, UserRound } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { useAuth } from "@/lib/auth-context";
 import {
   DEFAULT_PROFILE,
-  clearProfile,
   readProfile,
   writeProfile,
   type Profile,
@@ -19,13 +21,29 @@ import { OptionChip } from "@/components/ui/option-chip";
 import { Button } from "@/components/ui/button";
 
 export function ProfileClient() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
   const [profile, setProfile] = React.useState<Profile>(DEFAULT_PROFILE);
   const [saved, setSaved] = React.useState(false);
+
   React.useEffect(() => {
-    // Seed the editable copy from localStorage once on mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is client-only
-    setProfile(readProfile());
-  }, []);
+    // Seed from localStorage, then prefer the signed-in user's saved defaults.
+    const local = readProfile();
+    const merged: Profile = user
+      ? {
+          fullName: user.fullName ?? local.fullName,
+          email: user.email,
+          defaultBudget: user.defaultBudget ?? local.defaultBudget,
+          defaultTravelStyle: user.defaultTravelStyle ?? local.defaultTravelStyle,
+          foodPreferences:
+            user.foodPreferences.length > 0
+              ? user.foodPreferences
+              : local.foodPreferences,
+        }
+      : local;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only seed
+    setProfile(merged);
+  }, [user]);
 
   function update<K extends keyof Profile>(key: K, value: Profile[K]) {
     setProfile((p) => ({ ...p, [key]: value }));
@@ -45,12 +63,24 @@ export function ProfileClient() {
   function save() {
     writeProfile(profile);
     setSaved(true);
+    // Logged in? Persist defaults to the cloud too (fire and forget).
+    if (user) {
+      void fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: profile.fullName || undefined,
+          defaultBudget: profile.defaultBudget,
+          defaultTravelStyle: profile.defaultTravelStyle,
+          foodPreferences: profile.foodPreferences,
+        }),
+      }).catch(() => {});
+    }
   }
 
-  function signOut() {
-    clearProfile();
-    setProfile(DEFAULT_PROFILE);
-    setSaved(false);
+  async function handleSignOut() {
+    await logout();
+    router.push("/");
   }
 
   return (
@@ -91,8 +121,22 @@ export function ProfileClient() {
                 value={profile.email}
                 onChange={(e) => update("email", e.target.value)}
                 placeholder="you@example.com"
+                disabled={Boolean(user)}
               />
             </div>
+            {user ? (
+              <p className="flex items-center gap-1.5 text-sm text-emerald">
+                <Check className="size-4" /> Signed in — your trips sync across
+                devices.
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+                  Sign in
+                </Link>{" "}
+                to save your trips to the cloud and sync across devices.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -142,9 +186,17 @@ export function ProfileClient() {
         </Card>
 
         <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={signOut}>
-            <LogOut className="size-4" /> Sign out
-          </Button>
+          {user ? (
+            <Button variant="ghost" onClick={handleSignOut}>
+              <LogOut className="size-4" /> Sign out
+            </Button>
+          ) : (
+            <Button asChild variant="ghost">
+              <Link href="/login">
+                <LogIn className="size-4" /> Sign in
+              </Link>
+            </Button>
+          )}
           <Button onClick={save}>
             {saved ? (
               <>
