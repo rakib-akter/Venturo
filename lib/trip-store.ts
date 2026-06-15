@@ -51,6 +51,76 @@ function makeId(): string {
   return `trip_${Date.now().toString(36)}`;
 }
 
+// --- Cloud mirroring --------------------------------------------------------
+// When signed in, every local change is also written to the cloud (fire and
+// forget — failures just leave the trip local). `setCloudEnabled` is toggled by
+// the auth provider so anonymous sessions never hit the network.
+
+let cloudEnabled = false;
+
+export function setCloudEnabled(value: boolean): void {
+  cloudEnabled = value;
+}
+
+function cloudUpsert(trip: StoredTrip): void {
+  if (!cloudEnabled) return;
+  void fetch("/api/trips", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: trip.id,
+      preferences: trip.preferences,
+      createdAt: trip.createdAt,
+      snapshot: trip.snapshot,
+    }),
+  }).catch(() => {});
+}
+
+function cloudDelete(id: string): void {
+  if (!cloudEnabled) return;
+  void fetch(`/api/trips/${id}`, { method: "DELETE" }).catch(() => {});
+}
+
+function cloudSavePlace(tripId: string, placeId: string, saved: boolean): void {
+  if (!cloudEnabled) return;
+  void fetch("/api/save-place", {
+    method: saved ? "POST" : "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tripId, placeId }),
+  }).catch(() => {});
+}
+
+/** Clear local trips (called on logout so the next user starts clean). */
+export function resetLocalTrips(): void {
+  write([]);
+}
+
+/**
+ * Merge cloud + local on sign-in: pull the user's cloud trips, push any
+ * local-only trips (and their saved places) up, then write the union locally.
+ */
+export async function syncOnLogin(): Promise<void> {
+  setCloudEnabled(true);
+  let cloud: StoredTrip[] = [];
+  try {
+    const res = await fetch("/api/trips");
+    if (res.ok) cloud = (await res.json()).trips ?? [];
+  } catch {
+    return; // offline — keep working locally
+  }
+  const cloudIds = new Set(cloud.map((t) => t.id));
+  const local = read();
+  const localOnly = local.filter((t) => !cloudIds.has(t.id));
+
+  // Push local-only trips to the cloud so they aren't lost.
+  for (const t of localOnly) {
+    cloudUpsert(t);
+    for (const pid of t.savedPlaceIds) cloudSavePlace(t.id, pid, true);
+  }
+
+  write([...cloud, ...localOnly]);
+}
+
 export function listTrips(): StoredTrip[] {
   return read().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
@@ -68,11 +138,13 @@ export function createTrip(preferences: TripPreferences): string {
     savedPlaceIds: [],
   };
   write([trip, ...read()]);
+  cloudUpsert(trip);
   return trip.id;
 }
 
 export function deleteTrip(id: string): void {
   write(read().filter((t) => t.id !== id));
+  cloudDelete(id);
 }
 
 /** Persist a generated plan snapshot against a trip (for worldwide trips). */
@@ -82,16 +154,19 @@ export function saveSnapshot(id: string, snapshot: GeneratedTrip): void {
   if (!trip) return;
   trip.snapshot = snapshot;
   write(trips);
+  cloudUpsert(trip);
 }
 
 export function toggleSavedPlace(tripId: string, placeId: string): void {
   const trips = read();
   const trip = trips.find((t) => t.id === tripId);
   if (!trip) return;
-  trip.savedPlaceIds = trip.savedPlaceIds.includes(placeId)
-    ? trip.savedPlaceIds.filter((p) => p !== placeId)
-    : [...trip.savedPlaceIds, placeId];
+  const saved = !trip.savedPlaceIds.includes(placeId);
+  trip.savedPlaceIds = saved
+    ? [...trip.savedPlaceIds, placeId]
+    : trip.savedPlaceIds.filter((p) => p !== placeId);
   write(trips);
+  cloudSavePlace(tripId, placeId, saved);
 }
 
 /** Subscribe to trip changes and return the live list (same-tab + cross-tab). */
