@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { TripDraftProvider } from "@/lib/trip-draft";
+import { AuthProvider } from "@/lib/auth-context";
 
 /**
  * Page chrome: top navbar (md+), the page content, and the mobile bottom tab
@@ -9,7 +10,8 @@ import { TripDraftProvider } from "@/lib/trip-draft";
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <TripDraftProvider>
+    <AuthProvider>
+      <TripDraftProvider>
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"
@@ -21,6 +23,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
       <MobileNav />
-    </TripDraftProvider>
+      </TripDraftProvider>
+    </AuthProvider>
   );
 }

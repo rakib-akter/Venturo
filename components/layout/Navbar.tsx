@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { LogIn } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/layout/Logo";
 import { NAV_ITEMS, isActive } from "@/components/layout/nav-config";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
@@ -11,6 +13,8 @@ import { Button } from "@/components/ui/button";
 /** Sticky top navigation, shown on tablet and up. */
 export function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
@@ -37,6 +41,24 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {!loading && user ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await logout();
+                router.push("/");
+              }}
+            >
+              Sign out
+            </Button>
+          ) : !loading ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/login">
+                <LogIn className="size-4" /> Sign in
+              </Link>
+            </Button>
+          ) : null}
           <Button asChild size="sm">
             <Link href="/plan">Plan a trip</Link>
           </Button>
