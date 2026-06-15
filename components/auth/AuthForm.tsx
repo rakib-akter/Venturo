@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -107,7 +108,17 @@ export function AuthForm() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            {mode === "login" ? (
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            ) : null}
+          </div>
           <Input
             id="password"
             type="password"
