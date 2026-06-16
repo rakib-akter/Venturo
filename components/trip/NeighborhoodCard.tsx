@@ -2,38 +2,57 @@ import { Check, X, BedDouble } from "lucide-react";
 import type { Neighborhood } from "@/lib/types";
 import { cn, priceLevelLabel } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { PhotoFrame } from "@/components/trip/PhotoFrame";
 import { ScoreBadge } from "@/components/trip/ScoreBadge";
 import { ScoreBar } from "@/components/trip/ScoreBar";
+
+const HOOD_GRADIENT = "from-sky-400/40 to-indigo-500/40";
 
 /** A detailed, comparable neighborhood card for the "best areas to stay" view. */
 export function NeighborhoodCard({
   hood,
   rank,
+  imageUrl,
   className,
 }: {
   hood: Neighborhood;
   rank?: number;
+  imageUrl?: string;
   className?: string;
 }) {
   return (
     <article
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 shadow-card transition-shadow hover:shadow-card-hover",
+        "flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-shadow hover:shadow-card-hover",
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            {rank ? (
-              <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-                {rank}
-              </span>
-            ) : null}
-            <h3 className="font-display text-lg font-semibold">{hood.name}</h3>
+      {/* Photo banner */}
+      <PhotoFrame
+        imageUrl={imageUrl ?? hood.imageUrl}
+        gradient={HOOD_GRADIENT}
+        alt={hood.name}
+        className="flex h-32 flex-col justify-end p-4"
+      >
+        {rank ? (
+          <span className="absolute left-4 top-4 z-10 flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground shadow">
+            {rank}
+          </span>
+        ) : null}
+        {typeof hood.finalScore === "number" ? (
+          <div className="absolute right-3 top-3 z-10">
+            <ScoreBadge score={hood.finalScore} size="lg" showLabel />
           </div>
+        ) : null}
+        <h3 className="relative font-display text-lg font-semibold text-white drop-shadow">
+          {hood.name}
+        </h3>
+      </PhotoFrame>
+
+      <div className="flex flex-col gap-4 p-5">
+        <div className="space-y-2">
           <p className="text-sm text-muted-foreground">{hood.description}</p>
-          <div className="flex flex-wrap gap-1.5 pt-1">
+          <div className="flex flex-wrap gap-1.5">
             {hood.bestFor.map((b) => (
               <Badge key={b} variant="secondary">
                 {b}
@@ -41,10 +60,6 @@ export function NeighborhoodCard({
             ))}
           </div>
         </div>
-        {typeof hood.finalScore === "number" ? (
-          <ScoreBadge score={hood.finalScore} size="lg" showLabel />
-        ) : null}
-      </header>
 
       {/* Sub-scores */}
       <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
@@ -83,6 +98,7 @@ export function NeighborhoodCard({
           {priceLevelLabel(hood.priceLevel)}
         </span>
       </footer>
+      </div>
     </article>
   );
 }

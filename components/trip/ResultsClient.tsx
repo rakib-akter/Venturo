@@ -7,6 +7,7 @@ import type { Place } from "@/lib/types";
 import { useTrip } from "@/lib/trip-store";
 import { useMounted } from "@/lib/use-mounted";
 import { useGeneratedTrip } from "@/lib/use-generated-trip";
+import { useTripImages } from "@/lib/use-trip-images";
 import { Bookmark } from "lucide-react";
 import { PillTabs } from "@/components/ui/pill-tabs";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
   const [tab, setTab] = React.useState<Tab>("overview");
   const mounted = useMounted();
   const state = useGeneratedTrip(stored);
+  const images = useTripImages(state.status === "ready" ? state.trip : null);
 
   // Not-found (mounted, but no such trip in storage)
   if (mounted && !stored) {
@@ -136,6 +138,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
         preferences={stored.preferences}
         summary={generated.summary}
         highlights={generated.highlights}
+        imageUrl={images[`dest:${destination.slug}`]}
       />
 
       <div className="sticky top-16 z-20 -mx-6 mt-5 flex items-center gap-3 bg-background/80 px-6 py-3 backdrop-blur">
@@ -163,7 +166,11 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                 }
               />
               {neighborhoods[0] ? (
-                <NeighborhoodCard hood={neighborhoods[0]} rank={1} />
+                <NeighborhoodCard
+                  hood={neighborhoods[0]}
+                  rank={1}
+                  imageUrl={images[neighborhoods[0].id]}
+                />
               ) : null}
             </section>
 
@@ -184,6 +191,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                     tripId={tripId}
                     saved={savedSet.has(p.id)}
                     rank={i + 1}
+                    imageUrl={images[p.id]}
                   />
                 ))}
               </div>
@@ -205,6 +213,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                     place={p}
                     tripId={tripId}
                     saved={savedSet.has(p.id)}
+                    imageUrl={images[p.id]}
                   />
                 ))}
               </div>
@@ -263,7 +272,12 @@ export function ResultsClient({ tripId }: { tripId: string }) {
               Ranked for your priorities — transit, attractions, food, and safety.
             </p>
             {neighborhoods.map((h, i) => (
-              <NeighborhoodCard key={h.id} hood={h} rank={i + 1} />
+              <NeighborhoodCard
+                key={h.id}
+                hood={h}
+                rank={i + 1}
+                imageUrl={images[h.id]}
+              />
             ))}
           </div>
         )}
@@ -277,6 +291,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                 tripId={tripId}
                 saved={savedSet.has(p.id)}
                 rank={i + 1}
+                imageUrl={images[p.id]}
               />
             ))}
           </div>
@@ -290,6 +305,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                 place={p}
                 tripId={tripId}
                 saved={savedSet.has(p.id)}
+                imageUrl={images[p.id]}
               />
             ))}
           </div>
@@ -327,6 +343,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                   place={p}
                   tripId={tripId}
                   saved
+                  imageUrl={images[p.id]}
                 />
               ))}
             </div>

@@ -75,6 +75,8 @@ export interface Neighborhood {
   center: Geo;
   /** Computed by the scoring engine; absent in raw mock data. */
   finalScore?: number;
+  /** Resolved photo URL, filled lazily by the image layer. */
+  imageUrl?: string;
 }
 
 export interface Place {
@@ -107,6 +109,12 @@ export interface Place {
   /** e.g. "09:00–18:00"; informational for itinerary sequencing. */
   openHours?: string;
   imageColor?: string; // tailwind gradient seed for the photo placeholder
+  /** Resolved photo URL (Wikimedia/stock), filled lazily by the image layer. */
+  imageUrl?: string;
+  /** Wikidata Q-id (OSM-sourced), used to look up a real landmark photo. */
+  wikidata?: string;
+  /** Wikipedia tag, e.g. "en:Eiffel Tower" (OSM-sourced), for photo lookup. */
+  wikipedia?: string;
 }
 
 export interface Destination {
@@ -120,6 +128,8 @@ export interface Destination {
   idealDays: [number, number];
   heroColor: string; // gradient seed
   emoji: string;
+  /** Optional hero photo URL (Wikimedia/curated); falls back to the gradient. */
+  imageUrl?: string;
 }
 
 // ---------------------------------------------------------------------------

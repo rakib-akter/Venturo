@@ -149,6 +149,8 @@ function transform(
     popularity: popularityFor(tags, id),
     openHours: tags.opening_hours,
     imageColor: gradientFor(id),
+    wikidata: tags.wikidata,
+    wikipedia: tags.wikipedia,
   };
 }
 

@@ -11,14 +11,17 @@ export function TripSummary({
   preferences,
   summary,
   highlights,
+  imageUrl,
 }: {
   destination: Destination;
   preferences: TripPreferences;
   summary: string;
   highlights: string[];
+  imageUrl?: string;
 }) {
   const days = tripDayCount(preferences.startDate, preferences.endDate);
   const cost = estimateTripCost(preferences.budget, days, preferences.travelers);
+  const onPhoto = Boolean(imageUrl ?? destination.imageUrl);
   return (
     <div
       className={cn(
@@ -26,14 +29,37 @@ export function TripSummary({
         destination.heroColor,
       )}
     >
-      <div className="absolute right-5 top-5 text-5xl opacity-80">
+      {onPhoto ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl ?? destination.imageUrl}
+            alt={destination.city}
+            className="absolute inset-0 size-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/45 to-black/30" />
+        </>
+      ) : null}
+
+      <div className="relative">
+      <div className="absolute right-0 top-0 text-5xl opacity-80 drop-shadow">
         {destination.emoji}
       </div>
 
-      <p className="text-sm font-medium text-foreground/70">
+      <p
+        className={cn(
+          "text-sm font-medium",
+          onPhoto ? "text-white/80" : "text-foreground/70",
+        )}
+      >
         {destination.country}
       </p>
-      <h1 className="font-display text-3xl font-bold sm:text-4xl">
+      <h1
+        className={cn(
+          "font-display text-3xl font-bold sm:text-4xl",
+          onPhoto && "text-white drop-shadow",
+        )}
+      >
         {destination.city}
       </h1>
 
@@ -65,14 +91,24 @@ export function TripSummary({
         ) : null}
       </div>
 
-      <p className="mt-4 max-w-2xl text-pretty text-foreground/80">{summary}</p>
+      <p
+        className={cn(
+          "mt-4 max-w-2xl text-pretty",
+          onPhoto ? "text-white/90" : "text-foreground/80",
+        )}
+      >
+        {summary}
+      </p>
 
       {highlights.length > 0 ? (
         <ul className="mt-4 grid gap-1.5 sm:grid-cols-2">
           {highlights.map((h) => (
             <li
               key={h}
-              className="flex items-center gap-2 text-sm text-foreground/90"
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                onPhoto ? "text-white/90" : "text-foreground/90",
+              )}
             >
               <Sparkles className="size-4 shrink-0 text-accent" />
               {h}
@@ -80,6 +116,7 @@ export function TripSummary({
           ))}
         </ul>
       ) : null}
+      </div>
     </div>
   );
 }

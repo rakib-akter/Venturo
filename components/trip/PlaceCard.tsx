@@ -3,6 +3,7 @@ import type { Place } from "@/lib/types";
 import { cn, priceLevelLabel } from "@/lib/utils";
 import { TIME_SLOT_LABELS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { PhotoFrame } from "@/components/trip/PhotoFrame";
 import { SavePlaceButton } from "@/components/trip/SavePlaceButton";
 
 /** A rich place card for attractions, restaurants, and cafés. */
@@ -11,12 +12,14 @@ export function PlaceCard({
   tripId,
   saved = false,
   rank,
+  imageUrl,
   className,
 }: {
   place: Place;
   tripId?: string;
   saved?: boolean;
   rank?: number;
+  imageUrl?: string;
   className?: string;
 }) {
   return (
@@ -26,14 +29,14 @@ export function PlaceCard({
         className,
       )}
     >
-      {/* Photo placeholder */}
-      <div
-        className={cn(
-          "relative flex h-32 items-start justify-between bg-gradient-to-br p-3",
-          place.imageColor ?? "from-slate-300 to-slate-400",
-        )}
+      {/* Photo */}
+      <PhotoFrame
+        imageUrl={imageUrl ?? place.imageUrl}
+        gradient={place.imageColor}
+        alt={place.name}
+        className="flex h-36 items-start justify-between p-3"
       >
-        <div className="flex flex-wrap gap-1.5">
+        <div className="relative flex flex-wrap gap-1.5">
           <Badge variant="outline" className="bg-card/90 backdrop-blur">
             {place.category}
           </Badge>
@@ -44,16 +47,16 @@ export function PlaceCard({
           ) : null}
         </div>
         {rank ? (
-          <span className="flex size-7 items-center justify-center rounded-full bg-primary/90 text-xs font-semibold text-primary-foreground backdrop-blur">
+          <span className="relative flex size-7 items-center justify-center rounded-full bg-primary/90 text-xs font-semibold text-primary-foreground backdrop-blur">
             {rank}
           </span>
         ) : null}
         {tripId ? (
-          <div className="absolute bottom-3 right-3">
+          <div className="absolute bottom-3 right-3 z-10">
             <SavePlaceButton tripId={tripId} placeId={place.id} saved={saved} />
           </div>
         ) : null}
-      </div>
+      </PhotoFrame>
 
       {/* Body */}
       <div className="flex flex-1 flex-col gap-2 p-4">
