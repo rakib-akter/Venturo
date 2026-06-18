@@ -40,6 +40,21 @@ const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO date (YYYY-MM-DD)");
 
+export const cityLegSchema = z.object({
+  slug: z.string().min(1).max(200),
+  displayCity: z.string().min(1).max(200),
+  country: z.string().max(100).optional(),
+  countryCode: z.string().length(2).optional(),
+  center: z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+    })
+    .optional(),
+  source: z.enum(["curated", "osm"]).optional(),
+  nights: z.number().int().min(1).max(60),
+});
+
 export const tripPreferencesSchema = z
   .object({
     destination: z.string().min(1),
@@ -54,6 +69,7 @@ export const tripPreferencesSchema = z
     hotelPriorities: z.array(hotelPrioritySchema).default([]),
     // Worldwide (non-curated) destinations carry a geocoded center + source.
     displayCity: z.string().optional(),
+    countryCode: z.string().optional(),
     source: z.enum(["curated", "osm"]).optional(),
     center: z
       .object({
@@ -61,6 +77,8 @@ export const tripPreferencesSchema = z
         longitude: z.number().min(-180).max(180),
       })
       .optional(),
+    // Multi-city: when length ≥ 2, destination is leg[0].slug.
+    destinations: z.array(cityLegSchema).max(10).optional(),
   })
   .refine((p) => p.endDate >= p.startDate, {
     message: "endDate must be on or after startDate",

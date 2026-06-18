@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Map as MapIcon, BedDouble, Globe, Loader2 } from "lucide-react";
-import type { Place } from "@/lib/types";
+import type { CityTrip, Place } from "@/lib/types";
 import { useTrip } from "@/lib/trip-store";
 import { useMounted } from "@/lib/use-mounted";
 import { useGeneratedTrip } from "@/lib/use-generated-trip";
@@ -108,7 +108,8 @@ export function ResultsClient({ tripId }: { tripId: string }) {
   if (state.status !== "ready" || !stored) return null;
   const generated = state.trip;
 
-  const { destination, neighborhoods, attractions, food, itinerary } = generated;
+  const { destination, neighborhoods, attractions, food, itinerary, cityTrips } = generated;
+  const isMultiCity = (cityTrips?.length ?? 0) >= 2;
   const savedSet = new Set(stored.savedPlaceIds);
   const placesById: Record<string, Place> = Object.fromEntries(
     [...attractions, ...food].map((p) => [p.id, p]),
@@ -120,6 +121,10 @@ export function ResultsClient({ tripId }: { tripId: string }) {
   // Look up neighbourhoods from this trip's data (works for curated + OSM ids).
   const neighborhoodsById = Object.fromEntries(
     neighborhoods.map((n) => [n.id, n]),
+  );
+  // Map citySlug → CityTrip for quick lookup in itinerary day rendering.
+  const cityTripBySlug: Record<string, CityTrip> = Object.fromEntries(
+    (cityTrips ?? []).map((ct) => [ct.destination.slug, ct]),
   );
 
   const tabs = [
@@ -139,6 +144,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
         summary={generated.summary}
         highlights={generated.highlights}
         imageUrl={images[`dest:${destination.slug}`]}
+        cityTrips={cityTrips}
       />
 
       <div className="sticky top-16 z-20 -mx-6 mt-5 flex items-center gap-3 bg-background/80 px-6 py-3 backdrop-blur">
@@ -149,75 +155,130 @@ export function ResultsClient({ tripId }: { tripId: string }) {
           className="flex-1"
         />
         <div className="hidden shrink-0 sm:block">
-          <ShareTripButton title={`${destination.city} trip · Venturo`} />
+          <ShareTripButton
+            title={
+              isMultiCity
+                ? `${cityTrips!.map((ct) => ct.destination.city).join(" → ")} · Venturo`
+                : `${destination.city} trip · Venturo`
+            }
+          />
         </div>
       </div>
 
       <div className="mt-4 animate-fade-up">
         {tab === "overview" && (
           <div className="space-y-10">
-            <section>
-              <SectionTitle
-                title="Best area to stay"
-                action={
-                  <Button variant="ghost" size="sm" onClick={() => setTab("stay")}>
-                    Compare all <ArrowRight className="size-4" />
-                  </Button>
-                }
-              />
-              {neighborhoods[0] ? (
-                <NeighborhoodCard
-                  hood={neighborhoods[0]}
-                  rank={1}
-                  imageUrl={images[neighborhoods[0].id]}
-                />
-              ) : null}
-            </section>
-
-            <section>
-              <SectionTitle
-                title="Top attractions"
-                action={
-                  <Button variant="ghost" size="sm" onClick={() => setTab("do")}>
-                    See all <ArrowRight className="size-4" />
-                  </Button>
-                }
-              />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {attractions.slice(0, 3).map((p, i) => (
-                  <PlaceCard
-                    key={p.id}
-                    place={p}
-                    tripId={tripId}
-                    saved={savedSet.has(p.id)}
-                    rank={i + 1}
-                    imageUrl={images[p.id]}
+            {isMultiCity ? (
+              /* Multi-city overview: one highlight section per city */
+              cityTrips!.map((ct) => (
+                <section key={ct.destination.slug}>
+                  <SectionTitle
+                    title={ct.destination.city}
+                    action={
+                      <span className="text-sm text-muted-foreground">
+                        {ct.nights} {ct.nights === 1 ? "night" : "nights"}
+                      </span>
+                    }
                   />
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <SectionTitle
-                title="Where to eat"
-                action={
-                  <Button variant="ghost" size="sm" onClick={() => setTab("eat")}>
-                    See all <ArrowRight className="size-4" />
-                  </Button>
-                }
-              />
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {food.slice(0, 3).map((p) => (
-                  <PlaceCard
-                    key={p.id}
-                    place={p}
-                    tripId={tripId}
-                    saved={savedSet.has(p.id)}
-                    imageUrl={images[p.id]}
+                  {ct.neighborhoods[0] ? (
+                    <div className="mb-4">
+                      <NeighborhoodCard
+                        hood={ct.neighborhoods[0]}
+                        rank={1}
+                        imageUrl={images[ct.neighborhoods[0].id]}
+                      />
+                    </div>
+                  ) : null}
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {ct.attractions.slice(0, 2).map((p, i) => (
+                      <PlaceCard
+                        key={p.id}
+                        place={p}
+                        tripId={tripId}
+                        saved={savedSet.has(p.id)}
+                        rank={i + 1}
+                        imageUrl={images[p.id]}
+                      />
+                    ))}
+                    {ct.food[0] ? (
+                      <PlaceCard
+                        key={ct.food[0].id}
+                        place={ct.food[0]}
+                        tripId={tripId}
+                        saved={savedSet.has(ct.food[0].id)}
+                        imageUrl={images[ct.food[0].id]}
+                      />
+                    ) : null}
+                  </div>
+                </section>
+              ))
+            ) : (
+              /* Single-city overview */
+              <>
+                <section>
+                  <SectionTitle
+                    title="Best area to stay"
+                    action={
+                      <Button variant="ghost" size="sm" onClick={() => setTab("stay")}>
+                        Compare all <ArrowRight className="size-4" />
+                      </Button>
+                    }
                   />
-                ))}
-              </div>
-            </section>
+                  {neighborhoods[0] ? (
+                    <NeighborhoodCard
+                      hood={neighborhoods[0]}
+                      rank={1}
+                      imageUrl={images[neighborhoods[0].id]}
+                    />
+                  ) : null}
+                </section>
+
+                <section>
+                  <SectionTitle
+                    title="Top attractions"
+                    action={
+                      <Button variant="ghost" size="sm" onClick={() => setTab("do")}>
+                        See all <ArrowRight className="size-4" />
+                      </Button>
+                    }
+                  />
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {attractions.slice(0, 3).map((p, i) => (
+                      <PlaceCard
+                        key={p.id}
+                        place={p}
+                        tripId={tripId}
+                        saved={savedSet.has(p.id)}
+                        rank={i + 1}
+                        imageUrl={images[p.id]}
+                      />
+                    ))}
+                  </div>
+                </section>
+
+                <section>
+                  <SectionTitle
+                    title="Where to eat"
+                    action={
+                      <Button variant="ghost" size="sm" onClick={() => setTab("eat")}>
+                        See all <ArrowRight className="size-4" />
+                      </Button>
+                    }
+                  />
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {food.slice(0, 3).map((p) => (
+                      <PlaceCard
+                        key={p.id}
+                        place={p}
+                        tripId={tripId}
+                        saved={savedSet.has(p.id)}
+                        imageUrl={images[p.id]}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
 
             <section>
               <SectionTitle
@@ -241,6 +302,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                       ? neighborhoodsById[itinerary[0].neighborhoodId]
                       : undefined
                   }
+                  cityTrip={itinerary[0].citySlug ? cityTripBySlug[itinerary[0].citySlug] : undefined}
                 />
               ) : null}
             </section>
@@ -266,49 +328,112 @@ export function ResultsClient({ tripId }: { tripId: string }) {
         )}
 
         {tab === "stay" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
               <BedDouble className="size-4" />
               Ranked for your priorities — transit, attractions, food, and safety.
             </p>
-            {neighborhoods.map((h, i) => (
-              <NeighborhoodCard
-                key={h.id}
-                hood={h}
-                rank={i + 1}
-                imageUrl={images[h.id]}
-              />
-            ))}
+            {isMultiCity
+              ? cityTrips!.map((ct) => (
+                  <div key={ct.destination.slug} className="space-y-3">
+                    <h3 className="font-display text-base font-semibold text-muted-foreground">
+                      {ct.destination.city}
+                    </h3>
+                    {ct.neighborhoods.map((h, i) => (
+                      <NeighborhoodCard
+                        key={h.id}
+                        hood={h}
+                        rank={i + 1}
+                        imageUrl={images[h.id]}
+                      />
+                    ))}
+                  </div>
+                ))
+              : neighborhoods.map((h, i) => (
+                  <NeighborhoodCard
+                    key={h.id}
+                    hood={h}
+                    rank={i + 1}
+                    imageUrl={images[h.id]}
+                  />
+                ))}
           </div>
         )}
 
         {tab === "do" && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {attractions.map((p, i) => (
-              <PlaceCard
-                key={p.id}
-                place={p}
-                tripId={tripId}
-                saved={savedSet.has(p.id)}
-                rank={i + 1}
-                imageUrl={images[p.id]}
-              />
-            ))}
-          </div>
+          isMultiCity ? (
+            <div className="space-y-8">
+              {cityTrips!.map((ct) => (
+                <div key={ct.destination.slug}>
+                  <h3 className="mb-3 font-display text-base font-semibold text-muted-foreground">
+                    {ct.destination.city}
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {ct.attractions.map((p, i) => (
+                      <PlaceCard
+                        key={p.id}
+                        place={p}
+                        tripId={tripId}
+                        saved={savedSet.has(p.id)}
+                        rank={i + 1}
+                        imageUrl={images[p.id]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {attractions.map((p, i) => (
+                <PlaceCard
+                  key={p.id}
+                  place={p}
+                  tripId={tripId}
+                  saved={savedSet.has(p.id)}
+                  rank={i + 1}
+                  imageUrl={images[p.id]}
+                />
+              ))}
+            </div>
+          )
         )}
 
         {tab === "eat" && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {food.map((p) => (
-              <PlaceCard
-                key={p.id}
-                place={p}
-                tripId={tripId}
-                saved={savedSet.has(p.id)}
-                imageUrl={images[p.id]}
-              />
-            ))}
-          </div>
+          isMultiCity ? (
+            <div className="space-y-8">
+              {cityTrips!.map((ct) => (
+                <div key={ct.destination.slug}>
+                  <h3 className="mb-3 font-display text-base font-semibold text-muted-foreground">
+                    {ct.destination.city}
+                  </h3>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {ct.food.map((p) => (
+                      <PlaceCard
+                        key={p.id}
+                        place={p}
+                        tripId={tripId}
+                        saved={savedSet.has(p.id)}
+                        imageUrl={images[p.id]}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {food.map((p) => (
+                <PlaceCard
+                  key={p.id}
+                  place={p}
+                  tripId={tripId}
+                  saved={savedSet.has(p.id)}
+                  imageUrl={images[p.id]}
+                />
+              ))}
+            </div>
+          )
         )}
 
         {tab === "itinerary" && (
@@ -323,6 +448,7 @@ export function ResultsClient({ tripId }: { tripId: string }) {
                     ? neighborhoodsById[day.neighborhoodId]
                     : undefined
                 }
+                cityTrip={day.citySlug ? cityTripBySlug[day.citySlug] : undefined}
               />
             ))}
           </div>

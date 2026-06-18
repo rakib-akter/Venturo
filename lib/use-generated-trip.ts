@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { GeneratedTrip } from "@/lib/types";
-import { generateTrip } from "@/lib/ai";
+import { generateTrip, generateMultiCityTrip } from "@/lib/ai";
 import { isSupportedDestination } from "@/lib/mock-data";
 import { saveSnapshot, type StoredTrip } from "@/lib/trip-store";
 
@@ -25,6 +25,22 @@ export function useGeneratedTrip(
     if (!stored) return null;
     if (stored.snapshot) return { status: "ready", trip: stored.snapshot };
     const prefs = stored.preferences;
+
+    // Multi-city: all-curated legs can be resolved synchronously.
+    const legs = prefs.destinations;
+    if (legs && legs.length >= 2) {
+      const allCurated =
+        legs.every((l) => l.source !== "osm") &&
+        legs.every((l) => isSupportedDestination(l.slug));
+      if (allCurated) {
+        const r = generateMultiCityTrip(prefs);
+        return "error" in r
+          ? null // let async path handle it (will call the API)
+          : { status: "ready", trip: r };
+      }
+      return null; // requires a live fetch
+    }
+
     const curated =
       prefs.source !== "osm" && isSupportedDestination(prefs.destination);
     if (curated) {

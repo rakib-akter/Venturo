@@ -1,4 +1,6 @@
 import type {
+  CityLeg,
+  CityTrip,
   Destination,
   GeneratedTrip,
   Geo,
@@ -19,7 +21,7 @@ import {
   scoreAttraction,
   scoreRestaurant,
 } from "@/lib/scoring";
-import { buildItinerary } from "@/lib/itinerary";
+import { buildItinerary, buildMultiCityItinerary } from "@/lib/itinerary";
 import { optionLabel } from "@/lib/constants";
 import { tripDayCount } from "@/lib/utils";
 
@@ -30,7 +32,7 @@ import { tripDayCount } from "@/lib/utils";
  * behind this same `generateTrip` signature.
  */
 
-function rankPlaces(
+export function rankPlaces(
   places: Place[],
   prefs: TripPreferences,
   kind: "attraction" | "food",
@@ -206,4 +208,99 @@ export function makeTripId(): string {
     return crypto.randomUUID();
   }
   return `trip_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-city helpers (exported so ai-async.ts can reuse them)
+// ---------------------------------------------------------------------------
+
+export function buildMultiCitySummary(
+  prefs: TripPreferences,
+  legs: CityLeg[],
+): string {
+  const totalDays = tripDayCount(prefs.startDate, prefs.endDate);
+  const cityNames = legs.map((l) => l.displayCity).join(", ");
+  const pace = optionLabel(prefs.pace).toLowerCase();
+  const interestText =
+    prefs.interests.length > 0
+      ? prefs.interests.map((i) => optionLabel(i).toLowerCase()).join(", ")
+      : "a bit of everything";
+  return `A ${totalDays}-day ${pace} journey through ${cityNames}, built around ${interestText}, on a ${optionLabel(prefs.budget).toLowerCase()} budget for ${prefs.travelers} ${prefs.travelers === 1 ? "traveler" : "travelers"}.`;
+}
+
+export function buildMultiCityHighlights(cityTrips: CityTrip[]): string[] {
+  const highlights: string[] = [];
+  for (const ct of cityTrips.slice(0, 4)) {
+    const top = ct.attractions[0];
+    if (top) highlights.push(`In ${ct.destination.city}: ${top.name}`);
+  }
+  const hood = cityTrips[0]?.neighborhoods[0];
+  if (hood) highlights.push(`Base yourself in ${hood.name} for your first city`);
+  return highlights.slice(0, 4);
+}
+
+/**
+ * Synchronous multi-city generation for all-curated city lists.
+ * Falls back to the async path when any city needs live OSM data.
+ */
+export function generateMultiCityTrip(
+  prefs: TripPreferences,
+  opts: { userId?: string } = {},
+): GeneratedTrip | GenerateTripError {
+  const legs = prefs.destinations;
+  if (!legs || legs.length < 2) return generateTrip(prefs, opts);
+
+  for (const leg of legs) {
+    if (!isSupportedDestination(leg.slug)) {
+      return {
+        error: `"${leg.displayCity}" requires live data — loading from OpenStreetMap.`,
+      };
+    }
+  }
+
+  const cityTrips: CityTrip[] = [];
+  let startDay = 1;
+
+  for (const leg of legs) {
+    const destination = getDestination(leg.slug)!;
+    const attractions = rankPlaces(
+      getAttractions(leg.slug),
+      prefs,
+      "attraction",
+      destination.center,
+    );
+    const food = rankPlaces(getFoodPlaces(leg.slug), prefs, "food");
+    const neighborhoods = rankNeighborhoods(
+      getNeighborhoods(leg.slug),
+      prefs,
+      attractions,
+    );
+    cityTrips.push({ destination, neighborhoods, attractions, food, nights: leg.nights, startDay });
+    startDay += leg.nights;
+  }
+
+  const itinerary = buildMultiCityItinerary(prefs, cityTrips);
+  const allAttractions = cityTrips.flatMap((ct) => ct.attractions);
+  const allFood = cityTrips.flatMap((ct) => ct.food);
+  const allNeighborhoods = cityTrips.flatMap((ct) => ct.neighborhoods);
+
+  const trip: Trip = {
+    id: makeTripId(),
+    userId: opts.userId,
+    preferences: prefs,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    trip,
+    destination: cityTrips[0].destination,
+    summary: buildMultiCitySummary(prefs, legs),
+    highlights: buildMultiCityHighlights(cityTrips),
+    neighborhoods: allNeighborhoods,
+    attractions: allAttractions,
+    food: allFood,
+    itinerary,
+    source: "curated",
+    cityTrips,
+  };
 }

@@ -1,4 +1,5 @@
 import type {
+  CityTrip,
   ItineraryDay,
   ItineraryItem,
   Place,
@@ -90,8 +91,10 @@ export function buildItinerary(
   prefs: TripPreferences,
   rankedAttractions: Place[],
   rankedFood: Place[],
+  opts: { dayOffset?: number; totalDays?: number; citySlug?: string } = {},
 ): ItineraryDay[] {
-  const days = tripDayCount(prefs.startDate, prefs.endDate);
+  const days = opts.totalDays ?? tripDayCount(prefs.startDate, prefs.endDate);
+  const dayOffset = opts.dayOffset ?? 0;
   const wantsNightlife = prefs.interests.includes("nightlife");
   const usedAttractions = new Set<string>();
   const usedFood = new Set<string>();
@@ -166,16 +169,40 @@ export function buildItinerary(
     }
 
     const neighborhoodId = dayAttractions[0]?.neighborhoodId;
+    const globalDay = d + 1 + dayOffset;
     result.push({
-      id: `day-${d + 1}`,
-      dayNumber: d + 1,
+      id: `day-${globalDay}`,
+      dayNumber: globalDay,
       title: dayTitle(d, dayAttractions),
       summary: daySummary(dayAttractions, items.length),
       neighborhoodId,
       items,
+      citySlug: opts.citySlug,
     });
   }
 
+  return result;
+}
+
+/**
+ * Build a combined itinerary for a multi-city trip. Each city leg's days are
+ * numbered sequentially (city A days 1-3, city B days 4-5, …).
+ */
+export function buildMultiCityItinerary(
+  prefs: TripPreferences,
+  cityTrips: CityTrip[],
+): ItineraryDay[] {
+  const result: ItineraryDay[] = [];
+  let dayOffset = 0;
+  for (const ct of cityTrips) {
+    const days = buildItinerary(prefs, ct.attractions, ct.food, {
+      dayOffset,
+      totalDays: ct.nights,
+      citySlug: ct.destination.slug,
+    });
+    result.push(...days);
+    dayOffset += ct.nights;
+  }
   return result;
 }
 

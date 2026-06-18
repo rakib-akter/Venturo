@@ -7,6 +7,32 @@
  */
 
 // ---------------------------------------------------------------------------
+// Multi-city
+// ---------------------------------------------------------------------------
+
+/** One leg of a multi-city trip (a city + nights to spend there). */
+export interface CityLeg {
+  slug: string;
+  displayCity: string;
+  country?: string;
+  countryCode?: string;
+  center?: Geo;
+  source?: "curated" | "osm";
+  nights: number;
+}
+
+/** The fully scored data for one city within a multi-city trip. */
+export interface CityTrip {
+  destination: Destination;
+  neighborhoods: Neighborhood[];
+  attractions: Place[];
+  food: Place[];
+  nights: number;
+  /** 1-based day number when this city leg starts in the combined itinerary. */
+  startDay: number;
+}
+
+// ---------------------------------------------------------------------------
 // Enums / unions
 // ---------------------------------------------------------------------------
 
@@ -137,7 +163,8 @@ export interface Destination {
 // ---------------------------------------------------------------------------
 
 export interface TripPreferences {
-  destination: string; // city slug
+  /** First (or only) city slug — always set for backward compat. */
+  destination: string;
   country?: string;
   startDate: string; // ISO yyyy-mm-dd
   endDate: string; // ISO yyyy-mm-dd
@@ -156,6 +183,9 @@ export interface TripPreferences {
   center?: Geo;
   /** Which data source backs this destination. Defaults to curated. */
   source?: "curated" | "osm";
+  // --- Multi-city -------------------------------------------------------
+  /** When length ≥ 2, this is a multi-city trip; `destination` is leg[0].slug. */
+  destinations?: CityLeg[];
 }
 
 export interface ItineraryItem {
@@ -178,6 +208,8 @@ export interface ItineraryDay {
   summary: string;
   neighborhoodId?: string;
   items: ItineraryItem[];
+  /** City slug; only present in multi-city trips to label each day. */
+  citySlug?: string;
 }
 
 export interface Trip {
@@ -190,17 +222,23 @@ export interface Trip {
 /** The full generated plan returned by the AI layer for the results dashboard. */
 export interface GeneratedTrip {
   trip: Trip;
+  /** First (or only) city destination — always set. */
   destination: Destination;
   summary: string;
   highlights: string[];
-  neighborhoods: Neighborhood[]; // scored + sorted
-  attractions: Place[]; // scored + sorted
-  food: Place[]; // scored + sorted
+  /** All neighborhoods across all cities, scored + sorted per city. */
+  neighborhoods: Neighborhood[];
+  /** All attractions across all cities, scored + sorted per city. */
+  attractions: Place[];
+  /** All food places across all cities, scored + sorted per city. */
+  food: Place[];
   itinerary: ItineraryDay[];
   /** Which data source produced this trip. */
   source?: "curated" | "osm";
   /** Required attribution line for live-data (OSM) trips. */
   attribution?: string;
+  /** Per-city data; present only for multi-city trips (length ≥ 2). */
+  cityTrips?: CityTrip[];
 }
 
 export interface SavedPlace {

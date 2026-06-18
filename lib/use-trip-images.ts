@@ -27,26 +27,28 @@ interface BatchItem {
 }
 
 function buildItems(trip: GeneratedTrip): BatchItem[] {
+  const items: BatchItem[] = [];
+
+  // Multi-city: emit one destination item + places + neighborhoods per city.
+  if (trip.cityTrips && trip.cityTrips.length >= 2) {
+    for (const ct of trip.cityTrips) {
+      const city = ct.destination.city;
+      items.push({ id: `dest:${ct.destination.slug}`, kind: "destination", name: city, city });
+      for (const p of [...ct.attractions, ...ct.food]) {
+        items.push({ id: p.id, kind: "place", name: p.name, city, type: p.type, category: p.category, wikidata: p.wikidata, wikipedia: p.wikipedia });
+      }
+      for (const n of ct.neighborhoods) {
+        items.push({ id: n.id, kind: "neighborhood", name: n.name, city });
+      }
+    }
+    return items;
+  }
+
+  // Single-city path (unchanged).
   const city = trip.destination.city;
-  const items: BatchItem[] = [
-    {
-      id: `dest:${trip.destination.slug}`,
-      kind: "destination",
-      name: city,
-      city,
-    },
-  ];
+  items.push({ id: `dest:${trip.destination.slug}`, kind: "destination", name: city, city });
   for (const p of [...trip.attractions, ...trip.food]) {
-    items.push({
-      id: p.id,
-      kind: "place",
-      name: p.name,
-      city,
-      type: p.type,
-      category: p.category,
-      wikidata: p.wikidata,
-      wikipedia: p.wikipedia,
-    });
+    items.push({ id: p.id, kind: "place", name: p.name, city, type: p.type, category: p.category, wikidata: p.wikidata, wikipedia: p.wikipedia });
   }
   for (const n of trip.neighborhoods) {
     items.push({ id: n.id, kind: "neighborhood", name: n.name, city });

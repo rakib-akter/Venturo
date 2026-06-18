@@ -48,6 +48,13 @@ export function flagEmoji(countryCode?: string): string {
   return String.fromCodePoint(...codePoints);
 }
 
+/** Add N calendar days to an ISO date and return a new ISO date. */
+export function addDays(isoDate: string, days: number): string {
+  const d = new Date(`${isoDate}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Stable, URL-safe slug from an arbitrary label. */
 export function slugify(value: string): string {
   return value

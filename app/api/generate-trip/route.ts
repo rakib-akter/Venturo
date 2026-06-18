@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { tripPreferencesSchema } from "@/lib/validation";
-import { generateTripAsync } from "@/lib/ai-async";
+import { generateTripAsync, generateMultiCityTripAsync } from "@/lib/ai-async";
 import type { TripPreferences } from "@/lib/types";
 
 /** Live OSM lookups can take a while on a cold cache. */
@@ -28,7 +28,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await generateTripAsync(parsed.data as TripPreferences);
+  const prefs = parsed.data as TripPreferences;
+  const isMultiCity = (prefs.destinations?.length ?? 0) >= 2;
+  const result = isMultiCity
+    ? await generateMultiCityTripAsync(prefs)
+    : await generateTripAsync(prefs);
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 422 });
   }

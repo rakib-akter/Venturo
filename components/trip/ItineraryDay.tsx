@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import type {
+  CityTrip,
   ItineraryDay as Day,
   Neighborhood,
   Place,
@@ -13,18 +14,28 @@ export function ItineraryDay({
   day,
   placesById,
   neighborhood,
+  cityTrip,
 }: {
   day: Day;
   placesById: Record<string, Place>;
   neighborhood?: Neighborhood;
+  cityTrip?: CityTrip;
 }) {
   return (
     <Card className="p-5">
       <header className="mb-5 flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="font-display text-sm font-semibold text-accent">
-            Day {day.dayNumber}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-display text-sm font-semibold text-accent">
+              Day {day.dayNumber}
+            </p>
+            {cityTrip ? (
+              <Badge variant="muted" className="gap-1 text-xs">
+                <span aria-hidden>{cityTrip.destination.emoji}</span>
+                {cityTrip.destination.city}
+              </Badge>
+            ) : null}
+          </div>
           <h3 className="font-display text-xl font-semibold leading-tight">
             {day.title.replace(/^Day \d+ · /, "")}
           </h3>

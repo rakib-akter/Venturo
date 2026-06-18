@@ -51,11 +51,12 @@ export function PreferencesClient() {
 
   // Guard: must have completed step 1 first.
   React.useEffect(() => {
-    if (!draft.destination || !draft.startDate || !draft.endDate) {
+    const hasCity = draft.destination || (draft.destinations?.length ?? 0) > 0;
+    if (!hasCity || !draft.startDate || !draft.endDate) {
       router.replace("/plan");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draft.destination, draft.startDate, draft.endDate]);
+  }, [draft.destination, draft.destinations, draft.startDate, draft.endDate]);
 
   function handleGenerate() {
     if (!draft.destination || !draft.startDate || !draft.endDate) return;
@@ -63,6 +64,10 @@ export function PreferencesClient() {
     const prefs: TripPreferences = {
       destination: draft.destination,
       country: draft.country,
+      countryCode: draft.countryCode,
+      displayCity: draft.displayCity,
+      center: draft.center,
+      source: draft.source,
       startDate: draft.startDate,
       endDate: draft.endDate,
       travelers: draft.travelers ?? 2,
@@ -71,6 +76,7 @@ export function PreferencesClient() {
       interests: draft.interests ?? [],
       foodPreferences: draft.foodPreferences ?? [],
       hotelPriorities: draft.hotelPriorities ?? [],
+      destinations: draft.destinations,
     };
     const id = createTrip(prefs);
     router.push(`/trips/${id}`);
