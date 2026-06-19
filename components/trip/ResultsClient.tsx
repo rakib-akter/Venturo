@@ -4,6 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, Map as MapIcon, BedDouble, Globe, Loader2 } from "lucide-react";
 import type { CityTrip, Place } from "@/lib/types";
+import { getMultiCityTransit } from "@/lib/transit";
+import type { TransitLeg } from "@/lib/transit";
 import { useTrip } from "@/lib/trip-store";
 import { useMounted } from "@/lib/use-mounted";
 import { useGeneratedTrip } from "@/lib/use-generated-trip";
@@ -17,6 +19,7 @@ import { TripSummary } from "@/components/trip/TripSummary";
 import { NeighborhoodCard } from "@/components/trip/NeighborhoodCard";
 import { PlaceCard } from "@/components/trip/PlaceCard";
 import { ItineraryDay } from "@/components/trip/ItineraryDay";
+import { TransitCard } from "@/components/trip/TransitCard";
 import { ShareTripButton } from "@/components/trip/ShareTripButton";
 
 type Tab = "overview" | "stay" | "do" | "eat" | "itinerary" | "saved";
@@ -127,6 +130,15 @@ export function ResultsClient({ tripId }: { tripId: string }) {
     (cityTrips ?? []).map((ct) => [ct.destination.slug, ct]),
   );
 
+  // Transit legs between consecutive cities (multi-city only).
+  const transitLegs: TransitLeg[] = isMultiCity
+    ? getMultiCityTransit(stored.preferences.destinations ?? [])
+    : [];
+  // Map fromSlug → TransitLeg for O(1) lookup when rendering itinerary transitions.
+  const transitByFromSlug: Record<string, TransitLeg> = Object.fromEntries(
+    transitLegs.map((tl) => [tl.fromSlug, tl]),
+  );
+
   const tabs = [
     { value: "overview", label: "Overview" },
     { value: "stay", label: "Where to stay", count: neighborhoods.length },
@@ -169,48 +181,53 @@ export function ResultsClient({ tripId }: { tripId: string }) {
         {tab === "overview" && (
           <div className="space-y-10">
             {isMultiCity ? (
-              /* Multi-city overview: one highlight section per city */
-              cityTrips!.map((ct) => (
-                <section key={ct.destination.slug}>
-                  <SectionTitle
-                    title={ct.destination.city}
-                    action={
-                      <span className="text-sm text-muted-foreground">
-                        {ct.nights} {ct.nights === 1 ? "night" : "nights"}
-                      </span>
-                    }
-                  />
-                  {ct.neighborhoods[0] ? (
-                    <div className="mb-4">
-                      <NeighborhoodCard
-                        hood={ct.neighborhoods[0]}
-                        rank={1}
-                        imageUrl={images[ct.neighborhoods[0].id]}
-                      />
-                    </div>
-                  ) : null}
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {ct.attractions.slice(0, 2).map((p, i) => (
-                      <PlaceCard
-                        key={p.id}
-                        place={p}
-                        tripId={tripId}
-                        saved={savedSet.has(p.id)}
-                        rank={i + 1}
-                        imageUrl={images[p.id]}
-                      />
-                    ))}
-                    {ct.food[0] ? (
-                      <PlaceCard
-                        key={ct.food[0].id}
-                        place={ct.food[0]}
-                        tripId={tripId}
-                        saved={savedSet.has(ct.food[0].id)}
-                        imageUrl={images[ct.food[0].id]}
-                      />
+              /* Multi-city overview: one highlight section per city + transit between */
+              cityTrips!.map((ct, ctIdx) => (
+                <React.Fragment key={ct.destination.slug}>
+                  <section>
+                    <SectionTitle
+                      title={ct.destination.city}
+                      action={
+                        <span className="text-sm text-muted-foreground">
+                          {ct.nights} {ct.nights === 1 ? "night" : "nights"}
+                        </span>
+                      }
+                    />
+                    {ct.neighborhoods[0] ? (
+                      <div className="mb-4">
+                        <NeighborhoodCard
+                          hood={ct.neighborhoods[0]}
+                          rank={1}
+                          imageUrl={images[ct.neighborhoods[0].id]}
+                        />
+                      </div>
                     ) : null}
-                  </div>
-                </section>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {ct.attractions.slice(0, 2).map((p, i) => (
+                        <PlaceCard
+                          key={p.id}
+                          place={p}
+                          tripId={tripId}
+                          saved={savedSet.has(p.id)}
+                          rank={i + 1}
+                          imageUrl={images[p.id]}
+                        />
+                      ))}
+                      {ct.food[0] ? (
+                        <PlaceCard
+                          key={ct.food[0].id}
+                          place={ct.food[0]}
+                          tripId={tripId}
+                          saved={savedSet.has(ct.food[0].id)}
+                          imageUrl={images[ct.food[0].id]}
+                        />
+                      ) : null}
+                    </div>
+                  </section>
+                  {ctIdx < cityTrips!.length - 1 && transitLegs[ctIdx] ? (
+                    <TransitCard leg={transitLegs[ctIdx]} />
+                  ) : null}
+                </React.Fragment>
               ))
             ) : (
               /* Single-city overview */
@@ -438,19 +455,32 @@ export function ResultsClient({ tripId }: { tripId: string }) {
 
         {tab === "itinerary" && (
           <div className="space-y-5">
-            {itinerary.map((day) => (
-              <ItineraryDay
-                key={day.id}
-                day={day}
-                placesById={placesById}
-                neighborhood={
-                  day.neighborhoodId
-                    ? neighborhoodsById[day.neighborhoodId]
-                    : undefined
-                }
-                cityTrip={day.citySlug ? cityTripBySlug[day.citySlug] : undefined}
-              />
-            ))}
+            {itinerary.map((day, dayIdx) => {
+              const nextDay = itinerary[dayIdx + 1];
+              const isTransition =
+                isMultiCity &&
+                nextDay &&
+                day.citySlug &&
+                nextDay.citySlug !== day.citySlug;
+              const transitLeg = isTransition
+                ? transitByFromSlug[day.citySlug!]
+                : undefined;
+              return (
+                <React.Fragment key={day.id}>
+                  <ItineraryDay
+                    day={day}
+                    placesById={placesById}
+                    neighborhood={
+                      day.neighborhoodId
+                        ? neighborhoodsById[day.neighborhoodId]
+                        : undefined
+                    }
+                    cityTrip={day.citySlug ? cityTripBySlug[day.citySlug] : undefined}
+                  />
+                  {transitLeg ? <TransitCard leg={transitLeg} /> : null}
+                </React.Fragment>
+              );
+            })}
           </div>
         )}
 
